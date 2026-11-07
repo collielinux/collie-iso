@@ -418,7 +418,7 @@ class FinishRootImageTest(unittest.TestCase):
         self.calls = []
         for patch in (
             mock.patch.object(phases_impl, "_root_image_required_packages",
-                              return_value=["limine", "omarchy-keyring", "collie"]),
+                              return_value=["limine", "omarchy-keyring", "omarchy"]),
             mock.patch.object(phases_impl.arch, "target_package_names", create=True,
                               side_effect=lambda target: self.packages),
             mock.patch.object(phases_impl.subprocess, "run",
@@ -433,7 +433,7 @@ class FinishRootImageTest(unittest.TestCase):
 
     def test_missing_required_package_fails_before_anything_else(self):
         self.packages.discard("omarchy")
-        with self.assertRaisesRegex(RuntimeError, "lacks required packages: collie"):
+        with self.assertRaisesRegex(RuntimeError, "lacks required packages: omarchy"):
             phases_impl._finish_root_image(self.ctx)
         self.assertEqual(self.calls, [])
 
