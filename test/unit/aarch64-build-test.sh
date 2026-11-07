@@ -46,7 +46,7 @@ grep -Fq 'aarch64 builds use the stable, rc or edge channel' "$ROOT/builder/buil
 grep -Fq 'COLLIE_KERNEL=linux-omarchy' "$ROOT/bin/collie-iso-make" || fail "an aarch64 image does not boot linux-omarchy"
 grep -Fq -- '--kernel' "$ROOT/bin/collie-iso-make" && fail "an aarch64 build still offers a choice of kernel"
 grep -Fq 'COLLIE_ARM_PLATFORM' "$ROOT/bin/collie-iso-make" "$ROOT/builder/build-iso.sh" && fail "an aarch64 build still asks which board it is for"
-grep -Fq "ALL_kver='/boot/vmlinuz-linux-omarchy'" "$ROOT/builder/linux-collie.preset" || fail "the live preset does not boot linux-omarchy"
+grep -Fq "ALL_kver='/boot/vmlinuz-linux-omarchy'" "$ROOT/builder/linux-omarchy.preset" || fail "the live preset does not boot linux-omarchy"
 grep -Fq 'echo "$COLLIE_KERNEL" > "$build_cache_dir/airootfs/root/collie_kernel"' "$ROOT/builder/build-iso.sh" || fail "the installer is not told which kernel to install"
 
 # --- builder wiring -----------------------------------------------------------
@@ -84,7 +84,7 @@ initramfs_gate=$(sed -n '/^live_initramfs_limit=/,/^done$/p' "$ROOT/builder/buil
 [[ -n $initramfs_gate ]] || fail "the builder no longer gates the live initramfs size"
 for platform in x86_64 aarch64; do
   mkdir -p "$fixture/gate-$platform/work/iso/arch/boot/$platform"
-  live_img="$fixture/gate-$platform/work/iso/arch/boot/$platform/initramfs-linux-collie.img"
+  live_img="$fixture/gate-$platform/work/iso/arch/boot/$platform/initramfs-linux-omarchy.img"
   truncate -s 96M "$live_img"
   (build_cache_dir="$fixture/gate-$platform" iso_subdir=arch/$platform COLLIE_ARCH=$platform; eval "$initramfs_gate") >/dev/null 2>&1 \
     || fail "the live initramfs size gate does not find the $platform initramfs"
@@ -118,7 +118,7 @@ for cfg in grub.cfg loopback.cfg; do
       # the ISO and drops to a shell.
       grep -Eq 'live_kernel|linux-t2|sys_vendor' "$fixture/$platform-$cfg" && fail "the aarch64 $cfg still chooses a Mac kernel"
       grep -Eq '^\s*initrd\s' "$fixture/$platform-$cfg" || fail "the aarch64 $cfg loads no initramfs"
-      grep -E '^\s*initrd\s' "$fixture/$platform-$cfg" | grep -Fv 'initrd /arch/boot/aarch64/initramfs-linux-collie.img' \
+      grep -E '^\s*initrd\s' "$fixture/$platform-$cfg" | grep -Fv 'initrd /arch/boot/aarch64/initramfs-linux-omarchy.img' \
         && fail "an aarch64 $cfg entry loads an initramfs Ventoy can't find by name"
     else
       grep -Fq 'n1x-recovery' "$fixture/$platform-$cfg" && fail "recovery entry leaked into the $platform $cfg"

@@ -69,7 +69,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          release=$(gh api repos/collielinux/collie/releases/latest --jq .tag_name)
+          release=$(gh api repos/collielinux/collie/releases/latest --jq .tag_name 2>/dev/null || true)
           published=$(curl -fsL "$SITE/stable/latest.json?run=$GITHUB_RUN_ID" | jq -r .version || true)
           channels=$(./test/vm-image/nightly-plan "$(date -u +%Y.%m.%d)" "${{ github.run_number }}" "${{ github.run_attempt }}" \
             "$GITHUB_EVENT_NAME" "$release" "$published")
