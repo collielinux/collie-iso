@@ -58,7 +58,7 @@ SHOW_CURSOR="${CSI}?25h"
 CLEAR="${CSI}2J${CSI}H"
 CLEAR_LINE="${CSI}2K"
 CLEAR_TO_END="${CSI}J"
-GREEN="${CSI}32m"
+ORANGE="${CSI}33m"
 RED="${CSI}31m"
 
 # The dashboard owns the final reboot prompt now, so keep the gum confirm
@@ -277,7 +277,7 @@ render_logo() {
   pad="$(left_padding "$LOGO_WIDTH")"
   if [[ -f $LOGO_PATH ]]; then
     while IFS= read -r line; do
-      printf '\r%s%s%b%s%b\n' "$CLEAR_LINE" "$pad" "$GREEN" "$line" "$RESET"
+      printf '\r%s%s%b%s%b\n' "$CLEAR_LINE" "$pad" "$ORANGE" "$line" "$RESET"
     done <"$LOGO_PATH"
   else
     center "${GREEN}Collie${RESET}" "$CONTENT_WIDTH"
