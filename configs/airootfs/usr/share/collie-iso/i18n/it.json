@@ -74,7 +74,6 @@
   "progress.tip.keybindings": "Super + K mostra tutte le scorciatoie",
   "progress.tip.superKey": "Super è il tasto Windows o Command della tua tastiera",
   "progress.tip.signPdfs": "Usa Xournal++ per firmare i PDF",
-  "progress.tip.localSend": "Condividi file con telefoni e portatili usando LocalSend",
   "progress.tip.webApps": "Trasforma qualsiasi sito in un'app con Installa > App web nel menu",
   "progress.tip.terminal": "Super + Return: terminale, Super + Shift + Return: browser",
   "progress.tip.media": "Immagini con Pinta, video con Kdenlive, documenti con LibreOffice",

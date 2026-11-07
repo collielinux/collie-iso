@@ -3035,7 +3035,7 @@ def configure_login(ctx: InstallContext) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 # configure_ssh_access: make the installed machine reachable over SSH with the
 # keys an autoinstall drive supplied. A stock Collie install ships openssh but
-# leaves sshd disabled, and its firewall.sh opens only LocalSend and docker DNS,
+# leaves sshd disabled, and its firewall.sh opens only docker DNS,
 # so all three pieces -- keys, service, firewall -- have to be done here.
 # ─────────────────────────────────────────────────────────────────────────────
 

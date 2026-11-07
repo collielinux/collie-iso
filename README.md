@@ -182,7 +182,7 @@ Encryption itself is configured by the `disk_encryption` block inside `user_conf
 ssh-ed25519 AAAA... you@host
 ```
 
-When `authorized_keys` is present, autoinstall installs it as the user's `~/.ssh/authorized_keys`, enables `sshd`, and adds a `ufw allow ssh` rule — a stock Collie install ships openssh with the service disabled and its firewall opens neither port 22 nor anything else beyond LocalSend and Docker's DNS. Networking needs nothing extra; NetworkManager is already enabled with DHCP. Password SSH authentication is left at the distro default. An `authorized_keys` with no keys in it fails the install rather than producing a machine nobody can reach.
+When `authorized_keys` is present, autoinstall installs it as the user's `~/.ssh/authorized_keys`, enables `sshd`, and adds a `ufw allow ssh` rule — a stock Collie install ships openssh with the service disabled and its firewall opens only Docker's DNS. Networking needs nothing extra; NetworkManager is already enabled with DHCP. Password SSH authentication is left at the distro default. An `authorized_keys` with no keys in it fails the install rather than producing a machine nobody can reach.
 
 When `tailscale_authkey` is present (one key, blank lines and `#` comments ignored), the install adds the `tailscale` package from the ISO's bundled mirror — nothing is fetched from the network at install or boot — and stages the join for first boot: the key lands at `/etc/tailscale/authkey` (root-only), `tailscaled` is enabled, ufw allows traffic in on `tailscale0`, and a background unit runs `tailscale up` once the network is actually up, retrying until it succeeds without holding up the boot. After a successful join the key is deleted and the unit disables itself; until then both survive reboots, so a machine installed offline joins whenever it first gets connectivity. The node appears on the tailnet under the configured hostname. Use a reusable, pre-authorized (tagged) key so one drive image serves many machines — or an ephemeral key for disposable VMs.
 
@@ -321,7 +321,7 @@ It only runs when started. When the branch it ran on has a pull request, the res
 
 ## Signing the ISO
 
-Run `./bin/collie-iso-sign [release/collie.iso]`. The signing key is retrieved from the shared Collie vault with the 1Password CLI.
+Run `./bin/collie-iso-sign [release/collie.iso]`. The signing key is retrieved from the shared Collie vault.
 
 ## Uploading the ISO
 

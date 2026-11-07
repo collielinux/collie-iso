@@ -74,7 +74,6 @@
   "progress.tip.keybindings": "Super + K parāda visus īsinājumtaustiņus",
   "progress.tip.superKey": "Super ir tavas tastatūras Windows vai Command taustiņš",
   "progress.tip.signPdfs": "Paraksti PDF ar Xournal++",
-  "progress.tip.localSend": "Kopīgo failus ar tālruņiem un klēpjdatoriem, izmantojot LocalSend",
   "progress.tip.webApps": "Pārvērt jebkuru vietni par lietotni ar Instalēt > Tīmekļa lietotne",
   "progress.tip.terminal": "Super + Return atver termināli, Super + Shift + Return – pārlūku",
   "progress.tip.media": "Attēlus rediģē ar Pinta, video ar Kdenlive, dokumentus ar LibreOffice",

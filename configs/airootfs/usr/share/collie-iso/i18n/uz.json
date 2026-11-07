@@ -74,7 +74,6 @@
   "progress.tip.keybindings": "Super + K barcha tugma birikmalarini koʻrsatadi",
   "progress.tip.superKey": "Super — klaviaturangizdagi Windows yoki Command tugmasi",
   "progress.tip.signPdfs": "PDF imzolash uchun Xournal++ dan foydalaning",
-  "progress.tip.localSend": "LocalSend orqali telefon va noutbuklar bilan fayl ulashing",
   "progress.tip.webApps": "Oʻrnatish > Veb-ilova bilan istalgan saytni ilovaga aylantiring",
   "progress.tip.terminal": "Super + Return terminalni, Super + Shift + Return brauzerni ochadi",
   "progress.tip.media": "Rasm – Pinta, video – Kdenlive, hujjat – LibreOffice da tahrirlanadi",

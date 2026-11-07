@@ -74,7 +74,6 @@
   "progress.tip.keybindings": "Super + K показывает все сочетания клавиш",
   "progress.tip.superKey": "Super — это клавиша Windows или Command на вашей клавиатуре",
   "progress.tip.signPdfs": "Подписывайте PDF в Xournal++",
-  "progress.tip.localSend": "Обменивайтесь файлами с телефонами и ноутбуками через LocalSend",
   "progress.tip.webApps": "Любой сайт станет приложением: Установить > Веб-приложение в меню",
   "progress.tip.terminal": "Super + Return открывает терминал, Super + Shift + Return — браузер",
   "progress.tip.media": "Изображения — в Pinta, видео — в Kdenlive, документы — в LibreOffice",

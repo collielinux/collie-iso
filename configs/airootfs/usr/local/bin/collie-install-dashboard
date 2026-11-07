@@ -77,7 +77,6 @@ tips=(
   progress.tip.keybindings
   progress.tip.superKey
   progress.tip.signPdfs
-  progress.tip.localSend
   progress.tip.webApps
   progress.tip.terminal
   progress.tip.media
