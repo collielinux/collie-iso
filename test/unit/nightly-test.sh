@@ -115,7 +115,7 @@ equal "edge: the version read from the ISO's name" "${BASH_REMATCH[0]}" "2026.10
 rm -rf "$tmp/out"
 echo "a released iso" >"$tmp/release/collie-4.0.4.iso"
 sealed "$tmp/sealed-stable"
-printf '%s\n' "collie 4.0.4-1" "/usr/lib/modules/7.2.5-3-collie/pkgbase is owned by linux-omarchy 7.2.5-3" "7.2.5-3-collie" >"$tmp/stable-packages"
+printf '%s\n' "omarchy 4.0.4-1" "/usr/lib/modules/7.2.5-3-omarchy/pkgbase is owned by linux-omarchy 7.2.5-3" "7.2.5-3-omarchy" >"$tmp/stable-packages"
 "$layout" stable 4.0.4 stable/4.0.4/431 "$tmp/release/collie-4.0.4.iso" "$tmp/sealed-stable" "$tmp/stable-packages" "$tmp/out" >/dev/null
 json=$tmp/out/stable/latest.json
 equal "stable: no ISO is published" "$(find "$tmp/out" -name '*.iso*' | wc -l)" "0"
