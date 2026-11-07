@@ -94,8 +94,9 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.channels) }}
-    # aarch64 runs on Linux on Apple Silicon: the ARM runners that have KVM.
-    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    # aarch64 runs on Namespace's ARM profile: Apple Silicon with KVM, so the
+    # VM install/boot tests run for real instead of degrading to build-only.
+    runs-on: ${{ matrix.arch == 'aarch64' && 'namespace-profile-collie-arm64' || 'ubuntu-latest' }}
     timeout-minutes: 90
     env:
       CHANNEL: ${{ matrix.channel }}
