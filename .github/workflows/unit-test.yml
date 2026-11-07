@@ -7,7 +7,7 @@ name: Unit tests
 on:
   pull_request:
   push:
-    branches: [quattro]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

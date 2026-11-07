@@ -48,7 +48,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SITE: https://nightly.omarchy.org
+  # TODO: collie nightly host when one exists; publish lane is inert until
+  # the R2_* secrets and this URL are set.
+  SITE: https://nightly.collie.invalid
 
 jobs:
   # Which channels this run makes, under which version, and where each goes:

@@ -1,7 +1,7 @@
 name: Install test comment
 
 # Posts the install test's numbers on the pull request as one comment for
-# every architecture, kept up to date on every run, next to quattro's latest
+# every architecture, kept up to date on every run, next to main's latest
 # numbers. GitHub runs workflow_run
 # workflows from the default branch, with write access even for
 # pull requests from forks, so this job never checks out or runs pull request
@@ -36,12 +36,12 @@ jobs:
 
       # A rerun keeps earlier attempts' artifacts under the same run, so take
       # exactly the attempt that finished (and the baseline's latest attempt).
-      - name: Fetch this run's numbers and quattro's latest
+      - name: Fetch this run's numbers and main's latest
         env:
           ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: |
           gh run download "$RUN_ID" -R "$REPO" -p "install-test-$RUN_ID-$ATTEMPT*" -D "$RUNNER_TEMP/pr" || true
-          base=$(gh run list -R "$REPO" --workflow install-test.yml --branch quattro --event push \
+          base=$(gh run list -R "$REPO" --workflow install-test.yml --branch main --event push \
             --status success -L 1 --json databaseId -q '.[0].databaseId')
           if [ -n "$base" ]; then
             base_attempt=$(gh api "repos/$REPO/actions/runs/$base" -q .run_attempt)

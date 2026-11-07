@@ -14,14 +14,14 @@ name: Install test
 
 on:
   pull_request:
-  # Each merge records quattro's numbers, which PR comments compare against.
+  # Each merge records main's numbers, which PR comments compare against.
   push:
-    branches: [quattro]
+    branches: [main]
   # By hand, the ISO can be built from another package channel: rc builds a
   # release candidate the way collie-release does (collie-iso-make --rc), to
   # test a fresh install of it, on both architectures, and stable the release
   # the same way. A pull request or a merge builds both from edge: this branch
-  # is built against collie's quattro, which the edge packages track.
+  # is built against collie's main, which the edge packages track.
   workflow_dispatch:
     inputs:
       channel:
@@ -68,7 +68,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - id: gate
         env:
-          # A push to quattro or a manual run is ours already.
+          # A push to main or a manual run is ours already.
           STATUS: ${{ github.event_name != 'pull_request' && 'ours' || steps.vouch.outputs.status }}
           AUTHOR: ${{ github.event.pull_request.user.login || github.actor }}
         run: |
@@ -111,7 +111,7 @@ jobs:
         if: env.ARCH == 'x86_64'
 
       # A pull request's or merge's ISO installs what the edge channel serves,
-      # built from collie's quattro, as the nightly does; on aarch64 that runs
+      # built from collie's main, as the nightly does; on aarch64 that runs
       # linux-omarchy, the one kernel for every aarch64 board. A run by hand
       # builds both from the channel it names. Every package comes from the
       # package repositories, none is built here.
