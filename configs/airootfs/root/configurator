@@ -133,7 +133,7 @@ greeter() {
   printf '\033[%d;1H' "$logo_row"
   gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "$(<"$LOGO_PATH")"
 
-  tagline="Beautiful, Fun & Agentic Linux"
+  tagline="Beautiful, Fun & Puppypilled Linux"
   tpad=$(((cols - ${#tagline}) / 2)); (( tpad < 0 )) && tpad=0
   printf '\033[%d;%dH%s' "$tagline_row" "$((tpad + 1))" "$tagline"
 
