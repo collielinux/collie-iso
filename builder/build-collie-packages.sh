@@ -69,6 +69,12 @@ for pkg in "${packages[@]}"; do
   cp -a "/omarchy-pkgs/pkgbuilds/$pkg" "$pkg_work"
   chown -R builder:builder "$pkg_work"
 
+  # makepkg runs --nodeps, so a Rust recipe's makedepends never arrive on
+  # their own; the base image doesn't ship cargo either.
+  if grep -q 'cargo' "$pkg_work/PKGBUILD"; then
+    pacman -S --needed --noconfirm cargo pkgconf
+  fi
+
   # The container's makepkg.conf compresses single-threaded and makes with one
   # job; use every core of the build host for both. su resets the environment,
   # so the source path is passed explicitly.
