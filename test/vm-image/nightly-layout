@@ -43,9 +43,7 @@ fail() { echo "nightly-layout: $*" >&2; exit 1; }
 [[ $channel == edge || $channel == stable || $channel == edge-aarch64 ]] || fail "'$channel' is not a channel"
 [[ -f $iso_file ]] || fail "no ISO at $iso_file"
 unpacked=(vmlinuz initrd cmdline)
-if [[ $sealed != - && $channel == edge-aarch64 ]]; then
-  fail "edge-aarch64 publishes no image; its sealed_dir is -"
-elif [[ $sealed != - ]]; then
+if [[ $sealed != - ]]; then
   for file in base.qcow2 "${unpacked[@]}"; do
     [[ -s $sealed/$file ]] || fail "the sealed image has no $file"
   done
@@ -100,8 +98,10 @@ if [[ $sealed == - ]]; then
   exit 0
 fi
 mkdir -p "$dir/unpacked"
-if [[ $channel == edge ]]; then
-  name=collie-$channel-$version
+arch=x86_64
+if [[ $channel == edge || $channel == edge-aarch64 ]]; then
+  name=collie-edge-$version
+  [[ $channel == edge-aarch64 ]] && { arch=aarch64; name=$name-aarch64; }
   iso=$name.iso
   iso_url=$site/$release/$iso
   mv "$iso_file" "$dir/$iso"
@@ -130,10 +130,10 @@ jq -n \
   --arg built_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --arg url "$iso_url" --arg sha256 "$iso_sha256" --argjson size "$iso_size" \
   --arg iso_commit "$iso_commit" --argjson omarchy_version "$(jnull_or_str "$collie")" --arg collie_commit "$collie_commit" \
-  --arg kernel "$kernel" \
+  --arg kernel "$kernel" --arg arch "$arch" \
   --arg vm_sha256 "$(cut -d' ' -f1 "$dir/$image.sha256")" --argjson vm_size "$(stat -c %s "$dir/$image")" \
   --args '{
-    version: $version, channel: $channel, built_at: $built_at,
+    version: $version, channel: $channel, arch: $arch, built_at: $built_at,
     url: $url, sha256: $sha256, size: $size,
     iso_commit: $iso_commit, omarchy_version: $omarchy_version, collie_commit: $collie_commit,
     kernel: $kernel,
