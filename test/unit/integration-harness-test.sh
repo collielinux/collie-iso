@@ -278,7 +278,7 @@ echo "ok - the factory first boot is typed into as us after its keyboard step"
 
 take wait_for_ssh answer_luks_prompt type_text
 ENCRYPT=true KB_LAYOUT=uk TYPE_LAYOUT=uk
-ssh_guest() { [[ $(paste -sd' ' "$work/pressed") == *"o m a r c h y ret"* ]]; }
+ssh_guest() { [[ $(paste -sd' ' "$work/pressed") == *"c o l l i e ret"* ]]; }
 for screen in "COLLIE" "A password is required to access the root volume:"; do
   ocr_screen() { echo "$screen"; }
   : >"$work/pressed"
