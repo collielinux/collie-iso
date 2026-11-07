@@ -1,12 +1,12 @@
 /*
- * The two things Omarchy reads from an NVIDIA N1x's firmware, for a VM's:
+ * The two things Collie reads from an NVIDIA N1x's firmware, for a VM's:
  *
  *   - the SSDT compiled from nvda0200.asl, added to the firmware's ACPI tables
  *     through its own ACPI table protocol, so the kernel finds the N1x's
- *     NVDA0200 device and Omarchy's detector names the machine aarch64-n1x;
+ *     NVDA0200 device and Collie's detector names the machine aarch64-n1x;
  *   - EXPOSED_DISP_FRM, the variable NVIDIA and the OEMs size the GPU's
  *     memory reservation with, as an N1x ships it, which the install shrinks
- *     (omarchy-apply-n1x-gpu-memory) and which a later boot leaves as it is.
+ *     (collie-apply-n1x-gpu-memory) and which a later boot leaves as it is.
  *
  * A UEFI driver: the firmware runs it from a PCI option ROM while it
  * enumerates PCI, before it boots anything.

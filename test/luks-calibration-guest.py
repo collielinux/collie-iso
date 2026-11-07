@@ -78,7 +78,7 @@ def exercise_formats(calibration, Luks2, report, expect_no_cache=False):
                     elapsed = time.monotonic() - start
                     output = ''
                 else:
-                    result, elapsed = command(['omarchy-luks-calibrate', 'format', str(image)], input=password)
+                    result, elapsed = command(['collie-luks-calibrate', 'format', str(image)], input=password)
                     output = result.stderr.decode()
                     assert ('Using this boot' in output) == (mode == 'cached'), output
                 result, _ = command(['cryptsetup', 'luksDump', '--dump-json-metadata', str(image)])
@@ -130,7 +130,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--expect-no-cache', action='store_true')
     args = parser.parse_args()
-    sys.path.insert(0, '/usr/share/omarchy-iso')
+    sys.path.insert(0, '/usr/share/collie-iso')
     from orchestrator import luks_calibration as calibration
     report = {'memory_kib': calibration.memory_available(), 'runs': []}
     try:

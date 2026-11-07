@@ -10,30 +10,30 @@ set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 
-ISO="$OMARCHY_INTEGRATION_ISO"
-SSH_PORT="${OMARCHY_INTEGRATION_SSH_PORT:-2322}"
-MEMORY="${OMARCHY_INTEGRATION_MEMORY:-8192}"
-INSTALL_TIMEOUT="${OMARCHY_INTEGRATION_INSTALL_TIMEOUT:-2400}"
+ISO="$COLLIE_INTEGRATION_ISO"
+SSH_PORT="${COLLIE_INTEGRATION_SSH_PORT:-2322}"
+MEMORY="${COLLIE_INTEGRATION_MEMORY:-8192}"
+INSTALL_TIMEOUT="${COLLIE_INTEGRATION_INSTALL_TIMEOUT:-2400}"
 # cache=none keeps the host page cache out of the guest's disk writes, so
 # install times measure the installer rather than the host (CI sets it).
-DISK_CACHE="${OMARCHY_INTEGRATION_DISK_CACHE:-}"
-NO_PREVIEW="${OMARCHY_INTEGRATION_NO_PREVIEW:-false}"
+DISK_CACHE="${COLLIE_INTEGRATION_DISK_CACHE:-}"
+NO_PREVIEW="${COLLIE_INTEGRATION_NO_PREVIEW:-false}"
 # true when the ISO is a shipped release rather than a build of this tree:
 # what only this tree's installer does is then noted instead of checked.
-RELEASE_ISO="${OMARCHY_INTEGRATION_RELEASE_ISO:-false}"
+RELEASE_ISO="${COLLIE_INTEGRATION_RELEASE_ISO:-false}"
 BOOT_TIMEOUT=600
 
-GUEST_USER="omarchy"
-GUEST_PASSWORD="omarchy"
-GUEST_HOSTNAME="omarchy-test"
+GUEST_USER="collie"
+GUEST_PASSWORD="collie"
+GUEST_HOSTNAME="collie-test"
 
 SCENARIO="${SCENARIO:-$(basename "${0%-test.sh}")}"
 
 # Firmware the VMs boot: uefi (OVMF, the default) or bios (SeaBIOS, legacy).
 # BIOS exercises the Limine MBR boot path that only real hardware covered; set
-# it with OMARCHY_INTEGRATION_FIRMWARE=bios or the runner's --bios flag. The
+# it with COLLIE_INTEGRATION_FIRMWARE=bios or the runner's --bios flag. The
 # base image and its caches are kept per-firmware so the two never collide.
-FIRMWARE="${OMARCHY_INTEGRATION_FIRMWARE:-uefi}"
+FIRMWARE="${COLLIE_INTEGRATION_FIRMWARE:-uefi}"
 OVMF_CODE="/usr/share/edk2/x64/OVMF_CODE.4m.fd"
 OVMF_VARS_TEMPLATE="/usr/share/edk2/x64/OVMF_VARS.4m.fd"
 
@@ -41,16 +41,16 @@ OVMF_VARS_TEMPLATE="/usr/share/edk2/x64/OVMF_VARS.4m.fd"
 # way is a configuration users actually run; keeping them here means a variant
 # costs an install, not a second image. Each variant keeps its own base image
 # so the scenarios that boot an overlay stay independent.
-VARIANT="${OMARCHY_INTEGRATION_VARIANT:-default}"
-DISK_GB="${OMARCHY_INTEGRATION_DISK_GB:-40}"
-UKI="${OMARCHY_INTEGRATION_UKI:-false}"
-ENCRYPT="${OMARCHY_INTEGRATION_ENCRYPT:-false}"
+VARIANT="${COLLIE_INTEGRATION_VARIANT:-default}"
+DISK_GB="${COLLIE_INTEGRATION_DISK_GB:-40}"
+UKI="${COLLIE_INTEGRATION_UKI:-false}"
+ENCRYPT="${COLLIE_INTEGRATION_ENCRYPT:-false}"
 # The console keymap the autoinstall asks for. With the default, us, a dropped
 # layout looks the same as a kept one. keymap-locale-test.sh checks that the
 # chosen layout reaches the target and the initramfs the LUKS passphrase
-# prompt runs from (upstream omarchy#8196); it needs a non-us value here to
+# prompt runs from (upstream collie#8196); it needs a non-us value here to
 # assert anything.
-KB_LAYOUT="${OMARCHY_INTEGRATION_KB_LAYOUT:-us}"
+KB_LAYOUT="${COLLIE_INTEGRATION_KB_LAYOUT:-us}"
 
 # type_text sends key positions over QMP and the guest reads them through its
 # own keymap: KB_LAYOUT at the installed system's console, LUKS prompt and
@@ -59,14 +59,14 @@ KB_LAYOUT="${OMARCHY_INTEGRATION_KB_LAYOUT:-us}"
 # into; a caller typing into anything else sets it. type_text knows us and
 # uk: of what it sends, kbd's uk map moves only @ (Shift+') and ~ (Shift+#,
 # the key beside Enter). Other layouts move what every run types: de swaps y
-# and z, so the passphrase "omarchy" arrives as "omarchz" and the unlock and
+# and z, so the passphrase "collie" arrives as "omarchz" and the unlock and
 # the console login fail. Teach type_text a layout's keys before allowing it
 # here.
 kb_layout_typeable() {
   case "$1" in
     us | uk) ;;
     *)
-      echo "OMARCHY_INTEGRATION_KB_LAYOUT=$1: the harness can type only the us and uk layouts" >&2
+      echo "COLLIE_INTEGRATION_KB_LAYOUT=$1: the harness can type only the us and uk layouts" >&2
       return 1
       ;;
   esac
@@ -114,7 +114,7 @@ NIC_EXTRA=""
 
 mkdir -p "$BASE_DIR" "$RUN_DIR"
 
-QMP_SOCK=$(mktemp -u "${TMPDIR:-/tmp}/omarchy-integration-qmp.XXXXXX.sock")
+QMP_SOCK=$(mktemp -u "${TMPDIR:-/tmp}/collie-integration-qmp.XXXXXX.sock")
 PIDFILE="$RUN_DIR/qemu.pid"
 
 FAILURES=0
@@ -159,7 +159,7 @@ finish() {
     # base image and are the bulk of what a run leaves behind (a hibernate
     # overlay carries the memory image); on a ramdisk run directory they
     # are what fills it. Screenshots and logs stay.
-    [[ ${OMARCHY_INTEGRATION_KEEP_DISKS:-0} == 1 ]] || rm -f "$RUN_DIR"/*.qcow2
+    [[ ${COLLIE_INTEGRATION_KEEP_DISKS:-0} == 1 ]] || rm -f "$RUN_DIR"/*.qcow2
   else
     log "$SCENARIO FAILED: $FAILURES assertion(s). Artifacts: $RUN_DIR"
     # A failed scenario keeps its disks for a look afterwards. A CI host
@@ -168,7 +168,7 @@ finish() {
     # factory-reset's shared-ESP ones, would otherwise park a full
     # re-install's overlay on the run directory for every scenario after
     # it: with corrupt-image's ISO copy that fills an 18 GB tmpfs.
-    [[ ${OMARCHY_INTEGRATION_DISCARD_DISKS:-0} == 1 ]] && rm -f "$RUN_DIR"/*.qcow2
+    [[ ${COLLIE_INTEGRATION_DISCARD_DISKS:-0} == 1 ]] && rm -f "$RUN_DIR"/*.qcow2
     exit 1
   fi
 }
@@ -296,7 +296,7 @@ start_vm() {
     -smp "$(nproc)" \
     -m "$MEMORY" \
     "${firmware_args[@]}" \
-    -drive "file=$disk,format=qcow2,if=none,id=drive0${DISK_CACHE:+,cache=$DISK_CACHE}${OMARCHY_DISK_DRIVE_OPTS:+,$OMARCHY_DISK_DRIVE_OPTS}" \
+    -drive "file=$disk,format=qcow2,if=none,id=drive0${DISK_CACHE:+,cache=$DISK_CACHE}${COLLIE_DISK_DRIVE_OPTS:+,$COLLIE_DISK_DRIVE_OPTS}" \
     -device virtio-blk-pci,drive=drive0,bootindex=1 \
     -device virtio-vga \
     -display none \
@@ -438,12 +438,12 @@ ssh_sudo() {
 # volume"; systemd-cryptsetup (the pre-built UKI's initramfs) asks "Please
 # enter passphrase for disk root". An initramfs mkinitcpio builds on the
 # machine (on BIOS, or for a layout the pre-built UKI lacks) asks with
-# Plymouth's lock field under the logo: OCR reads the logo ("OMARCHY",
+# Plymouth's lock field under the logo: OCR reads the logo ("COLLIE",
 # "OMARCHS" at this size, "0MMARCHY" with tesseract 5.5) and nothing else:
 # one short word around "arch". Once an encrypted run has
 # shown nothing but the logo for two samples in a row, nothing but that
 # prompt is listening to the keyboard, so type the passphrase blind. The
-# installer's dashboard always carries more text ("Installing Omarchy",
+# installer's dashboard always carries more text ("Installing Collie",
 # the tip line), and so does a booted system; the splash between the reboot
 # and the prompt discards keystrokes. Takes the screen's text, the name of
 # the caller's count of logo-only samples and a name for the screenshot,
@@ -723,7 +723,7 @@ EOF
 # none of this reaches it.
 cidata_cloud_init() {
   local dir="$1"
-  printf 'instance-id: omarchy-integration\n' >"$dir/meta-data"
+  printf 'instance-id: collie-integration\n' >"$dir/meta-data"
   printf '#cloud-config\nusers: []\ndisable_root: false\nssh_authorized_keys:\n  - %s\n' \
     "$(cat "$SSH_KEY.pub")" >"$dir/user-data"
 }
@@ -785,7 +785,7 @@ EOF
     "audio_config": { "audio": "pipewire" },
     "bootloader_config": { "bootloader": "Limine", "uki": $UKI, "removable": false },
     "custom_commands": [],
-    "omarchy_install": {
+    "collie_install": {
         "mode": "full_disk",
         "defer_provisioning": false,
         "target_mount": "/mnt",
@@ -955,8 +955,8 @@ wait_for_unattended_install() {
       # without this the log copies below come back empty. The installer has
       # exited to a shell on tty1; tty3 is free for the console login.
       ssh_live_root true 2>/dev/null || bootstrap_live_root_ssh 2>/dev/null || true
-      ssh_live_root "cat /var/log/omarchy-install.log" >"$RUN_DIR/omarchy-install.log" 2>/dev/null || true
-      ssh_live_root "cat /run/omarchy-install/state.json" >"$RUN_DIR/state.json" 2>/dev/null || true
+      ssh_live_root "cat /var/log/collie-install.log" >"$RUN_DIR/collie-install.log" 2>/dev/null || true
+      ssh_live_root "cat /run/collie-install/state.json" >"$RUN_DIR/state.json" 2>/dev/null || true
       # What the kernel saw: an I/O error in the installer is only explainable
       # with the block and filesystem messages behind it.
       ssh_live_root "dmesg" >"$RUN_DIR/dmesg.txt" 2>/dev/null || true
@@ -1028,7 +1028,7 @@ check_first_boot_update_units() {
 install_phase() {
   log "Installing $(basename "$ISO") unattended via cidata (headless)"
 
-  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "omarchy-integration" -f "$SSH_KEY"
+  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "collie-integration" -f "$SSH_KEY"
   detect_packages
   build_cidata
 
@@ -1047,7 +1047,7 @@ install_phase() {
   # not boot the isohybrid image off a fallback USB device here, so USB is not
   # worth the flakiness. The copytoram-off / USB path is covered by unit tests.
   start_vm "$BASE_DISK.building" "$RUN_DIR/install-serial.log" \
-    -drive "file=$ISO,media=cdrom,if=none,format=raw,id=cdrom0${OMARCHY_ISO_THROTTLE_BPS:+,throttling.bps-read=$OMARCHY_ISO_THROTTLE_BPS}" \
+    -drive "file=$ISO,media=cdrom,if=none,format=raw,id=cdrom0${COLLIE_ISO_THROTTLE_BPS:+,throttling.bps-read=$COLLIE_ISO_THROTTLE_BPS}" \
     -device ide-cd,drive=cdrom0,bootindex=2 \
     -drive "file=$CIDATA_IMG,format=raw,if=none,id=cidata" \
     -device usb-storage,drive=cidata
@@ -1057,8 +1057,8 @@ install_phase() {
   # Keep the installer's own clock, its log and the first boot's numbers next
   # to the base image while the system is reachable, so CI can report them
   # without attaching the disk (no nbd or loop device on a container runner).
-  ssh_sudo "cat /var/log/omarchy-install-timing.json" >"$BASE_DIR/omarchy-install-timing.json" 2>/dev/null || true
-  ssh_sudo "cat /var/log/omarchy-install.log" >"$BASE_DIR/omarchy-install.log" 2>/dev/null || true
+  ssh_sudo "cat /var/log/collie-install-timing.json" >"$BASE_DIR/collie-install-timing.json" 2>/dev/null || true
+  ssh_sudo "cat /var/log/collie-install.log" >"$BASE_DIR/collie-install.log" 2>/dev/null || true
   ssh_sudo "cat /etc/kernel/cmdline" >"$BASE_DIR/installed-cmdline.txt" 2>/dev/null || true
   # SSH can answer before startup finishes, and systemd-analyze refuses until
   # it has; wait (bounded) so the first-boot numbers are final.

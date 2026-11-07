@@ -14,7 +14,7 @@
 #     while the UKI initramfs had us.map.gz and no vconsole.conf. A passphrase
 #     enrolled under a non-US layout is then untypeable at the prompt, locking
 #     the owner out of a fresh install with no recovery but reinstalling
-#     (upstream omarchy#8196). Such an install builds its own UKI.
+#     (upstream collie#8196). Such an install builds its own UKI.
 #
 #   * build-root-image.sh pre-uncomments en_US.UTF-8 in locale.gen to skip
 #     0.77 s of locale-gen, but archinstall's set_locale only matches
@@ -22,7 +22,7 @@
 #     Unless the installer writes it, the install is left on systemd's
 #     LANG=C.UTF-8 fallback.
 #
-# The keymap half only asserts something when OMARCHY_INTEGRATION_KB_LAYOUT is
+# The keymap half only asserts something when COLLIE_INTEGRATION_KB_LAYOUT is
 # not us; with us the scenario logs that the assertion proves nothing.
 
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
@@ -31,7 +31,7 @@ base_image_ready || { echo "No base image; run this through ./test/integration" 
 # The initramfs the LUKS prompt runs from, as a guest shell snippet that sets
 # $img. A UEFI install boots a UKI with the initramfs embedded. A BIOS install
 # sets ENABLE_UKI=no: Limine loads a kernel and an initramfs file, the one
-# the Omarchy entry in /boot/limine.conf names (boot():/<path>#<hash>); its
+# the Collie entry in /boot/limine.conf names (boot():/<path>#<hash>); its
 # snapshot entries under limine_history come after it.
 boot_initramfs() {
   if [[ $FIRMWARE == bios ]]; then
@@ -61,7 +61,7 @@ boot_initramfs_manifest() {
 # The two hook sets store the keymap differently, and a check that knows only
 # one reports a false failure against the other:
 #
-#   busybox (omarchy_hooks.conf: keymap, consolefont) compiles it to
+#   busybox (collie_hooks.conf: keymap, consolefont) compiles it to
 #     /keymap.bin, and the runtime hook does `loadkmap < /keymap.bin`;
 #   systemd (sd-vconsole) ships usr/share/kbd/keymaps/**/<layout>.map.gz.
 #
@@ -100,11 +100,11 @@ verify_keymap_and_locale() {
   # An exact value, not "non-empty": C.UTF-8 is the bug this scenario exists
   # for and would pass a laxer check.
   #
-  # The expected value comes from OMARCHY_INTEGRATION_LOCALE. Every install
+  # The expected value comes from COLLIE_INTEGRATION_LOCALE. Every install
   # gets en_US.UTF-8 today, because the installer picks a keyboard layout and
   # nothing else; an install that legitimately gets another locale sets the
   # variable.
-  local expect_locale="${OMARCHY_INTEGRATION_LOCALE:-en_US.UTF-8}"
+  local expect_locale="${COLLIE_INTEGRATION_LOCALE:-en_US.UTF-8}"
   check "/etc/locale.conf is LANG=$expect_locale, not systemd's C.UTF-8 fallback" \
     ssh_guest ". /etc/locale.conf && [ \"\${LANG//\\\"/}\" = $(printf %q "$expect_locale") ]"
 
@@ -127,7 +127,7 @@ verify_keymap_and_locale() {
     # Not a pass: with the default layout this scenario cannot tell a kept
     # choice from a dropped one.
     log "NOTE: KB_LAYOUT is us — the keymap assertion is a tautology here."
-    log "      Run with OMARCHY_INTEGRATION_KB_LAYOUT=uk for the real check."
+    log "      Run with COLLIE_INTEGRATION_KB_LAYOUT=uk for the real check."
   else
     # Both halves, because either alone passes on a broken build: a keymap with
     # no vconsole.conf is the image's us default (us.map.gz and nothing else),

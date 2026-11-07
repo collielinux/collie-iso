@@ -3,7 +3,7 @@
 # Live ISO entry point on tty1: set up the live VT, run the configurator
 # wizard, then hand off to the Python install orchestrator. Mirrors the
 # stream/env contract from the previously-working installer:
-#   - stdout teed to /var/log/omarchy-install.log (CSI-stripped) AND to tty
+#   - stdout teed to /var/log/collie-install.log (CSI-stripped) AND to tty
 #   - stderr direct to /dev/tty so gum (which draws its TUI on stderr)
 #     renders correctly
 #   - CLICOLOR_FORCE/FORCE_COLOR so gum emits ANSI even with stdout piped
@@ -14,25 +14,25 @@ set -euo pipefail
 
 # The N1x recovery boot entry is a diagnostic shell, never the installer: record
 # the hardware probe, show how to reach the machine, and leave tty1 at a prompt.
-if grep -qw 'omarchy.n1x_recovery=1' /proc/cmdline; then
-  /usr/local/sbin/omarchy-n1x-live-probe || true
+if grep -qw 'collie.n1x_recovery=1' /proc/cmdline; then
+  /usr/local/sbin/collie-n1x-live-probe || true
   exit 0
 fi
 
-export OMARCHY_MIRROR="$(cat /root/omarchy_mirror)"
-if [[ -f /root/omarchy_iso_ref ]]; then
-  export OMARCHY_ISO_REF="$(cat /root/omarchy_iso_ref)"
+export COLLIE_MIRROR="$(cat /root/collie_mirror)"
+if [[ -f /root/collie_iso_ref ]]; then
+  export COLLIE_ISO_REF="$(cat /root/collie_iso_ref)"
 fi
-if [[ -f /usr/share/omarchy-iso/package-targets ]]; then
+if [[ -f /usr/share/collie-iso/package-targets ]]; then
   # shellcheck disable=SC1091
-  source /usr/share/omarchy-iso/package-targets
-  export OMARCHY_RUNTIME_PACKAGE OMARCHY_SETTINGS_PACKAGE OMARCHY_NVIM_PACKAGE
+  source /usr/share/collie-iso/package-targets
+  export COLLIE_RUNTIME_PACKAGE COLLIE_SETTINGS_PACKAGE COLLIE_NVIM_PACKAGE
 fi
-export OMARCHY_PATH=/usr/share/omarchy
-export OMARCHY_INSTALL=$OMARCHY_PATH/install
-export OMARCHY_INSTALL_LOG_FILE=/var/log/omarchy-install.log
-if [[ -f /usr/share/omarchy-iso/install-debug ]]; then
-  export OMARCHY_INSTALL_DEBUG=1
+export COLLIE_PATH=/usr/share/collie
+export COLLIE_INSTALL=$COLLIE_PATH/install
+export COLLIE_INSTALL_LOG_FILE=/var/log/collie-install.log
+if [[ -f /usr/share/collie-iso/install-debug ]]; then
+  export COLLIE_INSTALL_DEBUG=1
 fi
 
 # gum's key hints ("enter submit") are hardcoded English and add nothing to
@@ -53,17 +53,17 @@ set_tokyo_night_colors() {
 set_tokyo_night_colors
 
 mkdir -p /var/log
-touch "$OMARCHY_INSTALL_LOG_FILE"
+touch "$COLLIE_INSTALL_LOG_FILE"
 
 export COLUMNS=$(tput cols)
 export LINES=$(tput lines)
-exec > >(tee >(sed -u 's/\x1b\[[0-9;?]*[A-Za-z]//g' >>"$OMARCHY_INSTALL_LOG_FILE") 2>/dev/null) 2>/dev/tty
+exec > >(tee >(sed -u 's/\x1b\[[0-9;?]*[A-Za-z]//g' >>"$COLLIE_INSTALL_LOG_FILE") 2>/dev/null) 2>/dev/tty
 export CLICOLOR_FORCE=1
 export FORCE_COLOR=1
 
-if [[ ${OMARCHY_INSTALL_DEBUG:-} == "1" ]]; then
-  echo "=== Omarchy ISO debug build ==="
-  [[ -f /usr/share/omarchy-iso/build-info ]] && cat /usr/share/omarchy-iso/build-info
+if [[ ${COLLIE_INSTALL_DEBUG:-} == "1" ]]; then
+  echo "=== Collie ISO debug build ==="
+  [[ -f /usr/share/collie-iso/build-info ]] && cat /usr/share/collie-iso/build-info
   pacman -Q omarchy-settings omarchy-keyring 2>/dev/null || true
   echo "================================"
 fi
@@ -78,33 +78,33 @@ fi
 #
 # Clean page cache only, so the kernel reclaims it under pressure instead of
 # OOMing, and a budget so small machines never evict what was just warmed.
-# Set OMARCHY_NO_PREFETCH=1 to A/B the same ISO with this disabled.
+# Set COLLIE_NO_PREFETCH=1 to A/B the same ISO with this disabled.
 warm_offline_mirror() {
-  local mirror=/var/cache/omarchy/mirror/offline
+  local mirror=/var/cache/collie/mirror/offline
   local budget_kb spent_kb=0 size_kb path
   # The orchestrator's ROOT_IMAGE.
-  local image=/run/archiso/bootmnt/arch/$(uname -m)/omarchy-root.img.zst
+  local image=/run/archiso/bootmnt/arch/$(uname -m)/collie-root.img.zst
 
-  [[ ${OMARCHY_NO_PREFETCH:-} == 1 ]] && return 0
+  [[ ${COLLIE_NO_PREFETCH:-} == 1 ]] && return 0
 
   budget_kb=$(($(awk '/^MemAvailable:/ { print $2 }' /proc/meminfo) / 2))
   ((budget_kb > 262144)) || return 0
 
-  # omarchy-mirror-verify.service and then omarchy-root-image-verify.service
+  # collie-mirror-verify.service and then collie-root-image-verify.service
   # (started at boot) read the shipped mirror and the whole image as they hash
   # them, and two readers on one USB stick seek against each other: let both
   # finish first, whatever their verdict. Wait on their start jobs, not on
   # is-active: while the mirror is hashed the image's job is queued behind it
   # (Before=) and that unit still reads inactive. The image's pass is the
   # warm-up for the image too; the read below then keeps it cached.
-  while [[ -n $(systemctl list-jobs --no-legend omarchy-mirror-verify.service \
-    omarchy-root-image-verify.service 2>/dev/null) ]]; do
+  while [[ -n $(systemctl list-jobs --no-legend collie-mirror-verify.service \
+    collie-root-image-verify.service 2>/dev/null) ]]; do
     sleep 1
   done
 
   # The image first, and only when all of it fits: a second read of pages
   # the verify just cached keeps them cached through the install. When it does
-  # not fit, leave the cache alone. omarchy-image-write writes whatever part
+  # not fit, leave the cache alone. collie-image-write writes whatever part
   # of the image is still cached first and reads the rest once; re-reading
   # the head here, or the mirror after it, would only evict the part the
   # verify left behind (on a 4 GB machine, most of what was cached).
@@ -132,11 +132,11 @@ trap 'kill "$warm_pid" 2>/dev/null' EXIT
 
 cd /root
 # Autoinstall: a cidata drive carrying the configurator's own output files
-# stands in for the wizard. omarchy-cidata-load copies them into /root and
+# stands in for the wizard. collie-cidata-load copies them into /root and
 # everything downstream runs the ordinary path against ordinary inputs.
-if /usr/local/bin/omarchy-cidata-load; then
+if /usr/local/bin/collie-cidata-load; then
   echo "Autoinstall configuration found on cidata drive; skipping the configurator."
-  export OMARCHY_UI_INTERACTIVE=no
+  export COLLIE_UI_INTERACTIVE=no
 else
   ./configurator
 fi
@@ -147,25 +147,25 @@ fi
 # Parse the flag with jq (the same JSON semantics the orchestrator uses) rather
 # than a line regex, so a reformatted config can't read as a direct install.
 if [[ -f /root/defer-provisioning ]] ||
-  [[ "$(jq -r '.omarchy_install.defer_provisioning // false' /root/user_configuration.json 2>/dev/null)" == "true" ]]; then
-  export OMARCHY_UI_DEFER_PROVISIONING=yes
+  [[ "$(jq -r '.collie_install.defer_provisioning // false' /root/user_configuration.json 2>/dev/null)" == "true" ]]; then
+  export COLLIE_UI_DEFER_PROVISIONING=yes
 fi
 
 # The dashboard speaks the language picked in the configurator, or named by an
 # autoinstall configuration.
-OMARCHY_ISO_LANGUAGE="$(jq -r '.omarchy_install.language // "en"' /root/user_configuration.json 2>/dev/null || echo en)"
-export OMARCHY_ISO_LANGUAGE
+COLLIE_ISO_LANGUAGE="$(jq -r '.collie_install.language // "en"' /root/user_configuration.json 2>/dev/null || echo en)"
+export COLLIE_ISO_LANGUAGE
 
 # The foreground dashboard is now the sole visible install UI owner. It starts
 # the actual installer as a non-interactive child, logs child output, waits for
 # completion, then renders the final installed-time/reboot prompt itself.
-export OMARCHY_DASHBOARD_TTY="$(tty)"
-rm -f /run/omarchy-install/state.json
-/usr/local/bin/omarchy-install-dashboard \
-  "$OMARCHY_INSTALL_LOG_FILE" \
-  /run/omarchy-install/state.json \
+export COLLIE_DASHBOARD_TTY="$(tty)"
+rm -f /run/collie-install/state.json
+/usr/local/bin/collie-install-dashboard \
+  "$COLLIE_INSTALL_LOG_FILE" \
+  /run/collie-install/state.json \
   -- \
-  /usr/local/bin/omarchy-iso-install \
+  /usr/local/bin/collie-iso-install \
     --config /root/user_configuration.json \
     --creds /root/user_credentials.json \
     --encrypt-file /root/user_encrypt_installation.txt \

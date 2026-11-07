@@ -11,7 +11,7 @@ import unittest
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-SPEC = importlib.util.spec_from_file_location('luks_calibration', ROOT / 'configs/airootfs/usr/share/omarchy-iso/orchestrator/luks_calibration.py')
+SPEC = importlib.util.spec_from_file_location('luks_calibration', ROOT / 'configs/airootfs/usr/share/collie-iso/orchestrator/luks_calibration.py')
 luks = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(luks)
 LINE = 'argon2id     13 iterations, 1048576 memory, 4 parallel threads (CPUs) for 512-bit key (requested 2000 ms time)'
@@ -226,7 +226,7 @@ class SectorSize(unittest.TestCase):
 
     def test_free_space_format_names_the_device_after_luksformat(self):
         device = self.device(64 * 1024 * 1024)
-        with mock.patch.object(luks.sys, 'argv', ['omarchy-luks-calibrate', 'format', device]), \
+        with mock.patch.object(luks.sys, 'argv', ['collie-luks-calibrate', 'format', device]), \
                 mock.patch.object(luks, 'stop_calibration'), \
                 mock.patch.object(luks.os, 'execvp') as execvp:
             luks.main()

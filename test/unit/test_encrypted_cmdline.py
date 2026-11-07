@@ -4,7 +4,7 @@ The pre-built UKI unlocks the root with the systemd hooks, which read
 rd.luks.name= and ignore cryptdevice=. Added on the archinstall-derived path
 only, they would leave an encrypted install into free space (the pre-mounted
 path) with a Limine entry that can never unlock: no cryptsetup job, no
-passphrase prompt, "A start job is running for /dev/mapper/omarchy_root"
+passphrase prompt, "A start job is running for /dev/mapper/collie_root"
 without limit. No integration scenario installs into free space (the
 configurator partitions interactively), so the guarantee is tested here: the
 single writer every cmdline passes through adds the parameters and refuses an
@@ -33,8 +33,8 @@ sys.modules.setdefault(
 from orchestrator import phases_impl  # noqa: E402
 
 UUID = "00000000-1111-2222-3333-444444444444"  # no such device on any host
-ENCRYPTED = (f"cryptdevice=UUID={UUID}:omarchy_root:allow-discards,no-read-workqueue "
-             "root=/dev/mapper/omarchy_root rw")
+ENCRYPTED = (f"cryptdevice=UUID={UUID}:collie_root:allow-discards,no-read-workqueue "
+             "root=/dev/mapper/collie_root rw")
 
 
 def run(cmd):
@@ -49,7 +49,7 @@ class EncryptedCmdlineTest(unittest.TestCase):
 
     def test_a_uuid_spec_needs_no_device(self):
         cmdline = self.luks_tuning.with_cmdline_options(ENCRYPTED)
-        self.assertIn(f"rd.luks.name={UUID}=omarchy_root", cmdline)
+        self.assertIn(f"rd.luks.name={UUID}=collie_root", cmdline)
         self.assertIn(f"rd.luks.options={UUID}=", cmdline)
 
     def test_the_parameters_are_added_once(self):
@@ -74,7 +74,7 @@ class EncryptedCmdlineTest(unittest.TestCase):
         return (ctx.target / "etc" / "kernel" / "cmdline").read_text()
 
     def test_the_writer_adds_the_parameters(self):
-        self.assertIn(f"rd.luks.name={UUID}=omarchy_root", self.write_defaults(ENCRYPTED))
+        self.assertIn(f"rd.luks.name={UUID}=collie_root", self.write_defaults(ENCRYPTED))
 
     def test_the_writer_refuses_an_encrypted_cmdline_without_them(self):
         with mock.patch.object(self.luks_tuning, "with_cmdline_options", lambda cmdline: cmdline):

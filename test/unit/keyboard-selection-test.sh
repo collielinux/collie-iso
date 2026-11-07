@@ -6,12 +6,12 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/install/provisioning"
 cat > "$work/install/provisioning/setup-form.sh" <<'FORM'
-OMARCHY_KEYBOARD_LAYOUTS=$'Chinese (Simplified, Pinyin)|us|pinyin
+COLLIE_KEYBOARD_LAYOUTS=$'Chinese (Simplified, Pinyin)|us|pinyin
 English (US)|us
 Japanese|jp106|mozc'
 FORM
-export OMARCHY_PATH="$work"
-eval "$(sed -n '/^select_keyboard() {$/,/^}$/p' "$ROOT/bin/omarchy-iso-test")"
+export COLLIE_PATH="$work"
+eval "$(sed -n '/^select_keyboard() {$/,/^}$/p' "$ROOT/bin/collie-iso-test")"
 press() { pressed+=("$1"); }
 sleep() { :; }
 

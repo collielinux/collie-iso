@@ -2,7 +2,7 @@
 
 """Releasing the install disk before archinstall partitions it.
 
-omarchy-iso-cleanup-disk refuses when something still holds the disk, and its
+collie-iso-cleanup-disk refuses when something still holds the disk, and its
 last line says what. prepare_live has to put that line on the failure screen
 rather than the "returned non-zero exit status 1" a bare check=True gives, and
 has to stop before archinstall is ever loaded. These tests put stand-in
@@ -18,7 +18,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 
 # phases_impl imports the archinstall adapter at module scope, which pulls in
 # the archinstall library that only exists on the live ISO.
@@ -50,7 +50,7 @@ class InstallDiskReleaseTest(unittest.TestCase):
             self.addCleanup(patch.stop)
 
     def cleanup_script(self, body: str) -> None:
-        script = self.bin_dir / "omarchy-iso-cleanup-disk"
+        script = self.bin_dir / "collie-iso-cleanup-disk"
         script.write_text(f"#!/bin/sh\n{body}\n")
         script.chmod(0o755)
 

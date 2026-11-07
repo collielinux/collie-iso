@@ -77,7 +77,7 @@ class BuildTests(unittest.TestCase):
         self.executable('mkinitcpio','''#!/usr/bin/env python3
 import json,os,pathlib,sys
 root=pathlib.Path(os.environ['TEST_ROOT']); args=sys.argv[1:]
-(root/'mkinitcpio-call.json').write_text(json.dumps({'args':args,'dtbs':pathlib.Path(os.environ['OMARCHY_QCOM_DTBS_FILE']).read_text()}))
+(root/'mkinitcpio-call.json').write_text(json.dumps({'args':args,'dtbs':pathlib.Path(os.environ['COLLIE_QCOM_DTBS_FILE']).read_text()}))
 if os.environ.get('FAIL_MKINITCPIO'): sys.exit(23)
 pathlib.Path(args[args.index('-g')+1]).write_bytes(b'Qualcomm initramfs')
 ''')
@@ -126,13 +126,13 @@ else:
         start=builder.index('  # Keep the existing late-start path')
         end=builder.index('  rm -rf "$build_cache_dir/syslinux"',start)
         block=builder[start:end].replace('/builder/qualcomm/',str(ROOT/'builder/qualcomm')+'/')
-        old=('usr/local/bin/omarchy-live-dsp','etc/systemd/system/omarchy-live-dsp.service','etc/systemd/system/multi-user.target.wants/omarchy-live-dsp.service')
+        old=('usr/local/bin/collie-live-dsp','etc/systemd/system/collie-live-dsp.service','etc/systemd/system/multi-user.target.wants/collie-live-dsp.service')
         for name in old:
             path=self.root/'airootfs'/name; path.parent.mkdir(parents=True,exist_ok=True); path.write_text('old')
         result=subprocess.run(['bash','-c','build_cache_dir="$TEST_ROOT"\n'+block],env=self.env,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
-        self.assertEqual((self.root/'airootfs'/old[0]).read_text(),(ROOT/'builder/qualcomm/omarchy-live-dsp').read_text())
-        self.assertEqual((self.root/'airootfs'/old[1]).read_text(),(ROOT/'builder/qualcomm/omarchy-live-dsp.service').read_text())
+        self.assertEqual((self.root/'airootfs'/old[0]).read_text(),(ROOT/'builder/qualcomm/collie-live-dsp').read_text())
+        self.assertEqual((self.root/'airootfs'/old[1]).read_text(),(ROOT/'builder/qualcomm/collie-live-dsp.service').read_text())
         self.assertTrue((self.root/'airootfs'/old[2]).is_symlink())
         for name in ('hooks/qcom_early_startup','install/qcom_early_startup','qcom-early-firmware.py'):
             self.assertTrue((self.root/'airootfs/usr/lib/initcpio'/name).is_file())
@@ -153,7 +153,7 @@ error() { echo "error $*"; }
 source "$SCRIPT"
 build
 '''
-        env=self.env | {'SCRIPT':str(script),'OMARCHY_QCOM_DTBS_FILE':str(manifest),'FAIL_MODULE':'','FAIL_BINARY':''}
+        env=self.env | {'SCRIPT':str(script),'COLLIE_QCOM_DTBS_FILE':str(manifest),'FAIL_MODULE':'','FAIL_BINARY':''}
         result=subprocess.run(['bash','-c',harness],env=env,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
         for module in ('qrtr','qrtr_smd','qcom_pd_mapper','qcom_q6v5_pas','pmic_glink','pmic_glink_altmode','ucsi_glink'):
@@ -175,7 +175,7 @@ build
         helper.write_text('raise RuntimeError("invalid device tree")\n')
         failed=subprocess.run(['bash','-c',harness],env=env,capture_output=True,text=True)
         self.assertNotEqual(failed.returncode,0); self.assertNotIn('RUNSCRIPT',failed.stdout)
-        del env['OMARCHY_QCOM_DTBS_FILE']
+        del env['COLLIE_QCOM_DTBS_FILE']
         failed=subprocess.run(['bash','-c',harness],env=env,capture_output=True,text=True)
         self.assertNotEqual(failed.returncode,0); self.assertNotIn('RUNSCRIPT',failed.stdout)
 

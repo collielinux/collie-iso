@@ -140,7 +140,7 @@ qcom_startup_wait() {
 
 run_earlyhook() {
     local module timeout
-    [ "$(getarg omarchy.qcom_early)" = 1 ] || return 0
+    [ "$(getarg collie.qcom_early)" = 1 ] || return 0
     qcom_startup_active=1
     qcom_startup_failed=''
     qcom_startup_select || return 1
@@ -152,7 +152,7 @@ run_earlyhook() {
         fi
         return
     fi
-    timeout=$(getarg omarchy.qcom_timeout 30)
+    timeout=$(getarg collie.qcom_timeout 30)
     case "$timeout" in ''|*[!0-9]*) qcom_startup_fail 'invalid firmware timeout'; return 1 ;; esac
     [ "$timeout" -ge 1 ] && [ "$timeout" -le 120 ] || {
         qcom_startup_fail 'firmware timeout must be 1..120 seconds'; return 1;

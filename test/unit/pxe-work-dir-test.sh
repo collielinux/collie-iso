@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# omarchy-iso-boot-pxe keeps its VM disk and the TFTP root the guest boots
+# collie-iso-boot-pxe keeps its VM disk and the TFTP root the guest boots
 # from in one work directory, and qemu-img create truncates whatever path it
 # is handed. A directory someone else made first, or one others can write to,
 # could hold a disk.qcow2 symlink to one of our files or a kernel of their
@@ -25,7 +25,7 @@ check() { # desc, expected_rc, dir, [disk]
   echo "ok: $desc"
 }
 
-fresh="$work/cache/omarchy-iso-boot-pxe"
+fresh="$work/cache/collie-iso-boot-pxe"
 check "a missing work directory is created" 0 "$fresh"
 if [[ $(stat -c %a "$fresh" 2>/dev/null) != 700 ]]; then
   echo "FAIL: a new work directory is private (mode $(stat -c %a "$fresh" 2>/dev/null))"; fails=1

@@ -23,7 +23,7 @@ $today pxe booted in legacy BIOS mode
 $yesterday boot no failed units
 LIST
 
-export OMARCHY_INTEGRATION_KNOWN_FAILURES="$TMP/known"
+export COLLIE_INTEGRATION_KNOWN_FAILURES="$TMP/known"
 source "$ROOT/test/integration.d/known-failures.sh"
 
 fails=0
@@ -51,7 +51,7 @@ expect "an entry still counts on its date" "$today" "$(known_failure_until "boot
 SCENARIO=boot
 expect "an entry past its date no longer counts" "" "$(known_failure_until "no failed units")"
 
-OMARCHY_INTEGRATION_KNOWN_FAILURES="$TMP/missing"
+COLLIE_INTEGRATION_KNOWN_FAILURES="$TMP/missing"
 source "$ROOT/test/integration.d/known-failures.sh"
 expect "without the file nothing is allowed" "" "$(known_failure_until "no failed units")"
 

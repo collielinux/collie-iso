@@ -2,7 +2,7 @@
 
 The live UKI uses its own initramfs, built by `live-uki.sh`. The direct-boot
 kernel/initramfs pair is unchanged. Only the Qualcomm GRUB entry enables the
-`qcom_early_startup` hook with `omarchy.qcom_early=1`.
+`qcom_early_startup` hook with `collie.qcom_early=1`.
 
 Before loading drivers, the hook checks every ADSP firmware name in the running
 device tree. It accepts the normal firmware search directories and compressed

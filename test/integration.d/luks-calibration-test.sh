@@ -1,10 +1,10 @@
 #!/bin/bash
 # Exercise the shipped service, both format callers, missing/malformed-state
 # fallbacks, actual keyslot costs and repeated unlocks in an 8 GiB live guest.
-# Standalone: OMARCHY_INTEGRATION_ISO=/path/to.iso bash test/integration.d/luks-calibration-test.sh
+# Standalone: COLLIE_INTEGRATION_ISO=/path/to.iso bash test/integration.d/luks-calibration-test.sh
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
 
-[[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "omarchy-integration" -f "$SSH_KEY"
+[[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "collie-integration" -f "$SSH_KEY"
 qemu-img create -f qcow2 "$RUN_DIR/scratch.qcow2" 1G >/dev/null
 cp "$OVMF_VARS_TEMPLATE" "$RUN_DIR/OVMF_VARS.4m.fd"
 ACTIVE_OVMF="$RUN_DIR/OVMF_VARS.4m.fd"
@@ -21,7 +21,7 @@ else
   cat "$RUN_DIR/calibration.stderr" >&2
   check "both callers format and unlock after completed or skipped calibration" false
 fi
-ssh_live_root 'journalctl -b -u omarchy-luks-calibrate.service --no-pager' >"$RUN_DIR/calibration-unit.log"
+ssh_live_root 'journalctl -b -u collie-luks-calibrate.service --no-pager' >"$RUN_DIR/calibration-unit.log"
 stop_vm
 
 # A nominal 4 GiB VM has <4 GiB usable RAM. cryptsetup's memory cap here
@@ -38,6 +38,6 @@ else
   cat "$RUN_DIR/small-memory.stderr" >&2
   check "4 GiB live guest formats and unlocks with normal calibration" false
 fi
-ssh_live_root 'journalctl -b -u omarchy-luks-calibrate.service --no-pager' >"$RUN_DIR/small-memory-unit.log"
+ssh_live_root 'journalctl -b -u collie-luks-calibrate.service --no-pager' >"$RUN_DIR/small-memory-unit.log"
 stop_vm
 finish

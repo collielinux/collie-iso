@@ -63,8 +63,8 @@ bios_boot() { # keymap
   initramfs "$work/root/boot/f00d/linux-omarchy/initramfs-linux-omarchy" "$1"
   initramfs "$work/root/boot/f00d/limine_history/initramfs-linux-omarchy" us
   cat >"$work/root/boot/limine.conf" <<'EOF'
-/+Omarchy
-comment: Omarchy
+/+Collie
+comment: Collie
   //linux-omarchy
   comment: kernel-id=linux-omarchy
   protocol: linux
@@ -87,7 +87,7 @@ verify() { # firmware: run the scenario's checks, the failures into $FAILURES
 }
 
 rm -rf "$work/root"
-initramfs "$work/root/boot/EFI/Linux/omarchy_linux-omarchy.efi" uk
+initramfs "$work/root/boot/EFI/Linux/collie_linux-collie.efi" uk
 verify uefi
 ((FAILURES == 0)) || fail "a UEFI install with the layout in its UKI failed: $(grep 'not ok' "$work/out")"
 echo "ok - a UEFI install is checked in its UKI"

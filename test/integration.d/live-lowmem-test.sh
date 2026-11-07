@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The live ISO must reach its greeter with 512 MB of RAM.
 #
-# omarchy-iso#128: the 4.0.0 live initramfs was 241 MiB (the kms hook pulled
+# collie-iso#128: the 4.0.0 live initramfs was 241 MiB (the kms hook pulled
 # every DRM driver's firmware in), and GRUB failed to allocate it on a Lenovo
 # Yoga's fragmented EFI memory map, then booted the kernel without it: a VFS
 # panic that looked like a bad USB stick. Under OVMF the same initramfs fails at

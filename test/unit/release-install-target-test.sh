@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# omarchy-release-install-target is the one source of truth for letting go of
+# collie-release-install-target is the one source of truth for letting go of
 # the install target, and its exit status is load-bearing: the dashboard's
 # removal offer and its immediate `reboot -ff` both key on it, so a sweep that
 # quietly gives up must not report success. This drives the script with
@@ -10,7 +10,7 @@
 set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-SCRIPT="$ROOT/configs/airootfs/usr/local/bin/omarchy-release-install-target"
+SCRIPT="$ROOT/configs/airootfs/usr/local/bin/collie-release-install-target"
 
 fails=0
 check() { # desc, expected_rc, actual_rc, [needle in output], [output]
@@ -165,14 +165,14 @@ check_absent "no mapper is closed with nothing open" "cryptsetup" "$CALLS"
 new_box
 echo 0 >"$BOX/mounted_rc"
 printf '%s file 4194300 0 -2\n/dev/zram0 partition 8388604 0 100\n' "$TARGET/swap/swapfile" >"$BOX/swaps"
-echo "/dev/mapper/omarchy_root[/@]" >"$BOX/sources"
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
+echo "/dev/mapper/collie_root[/@]" >"$BOX/sources"
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
 run_release
 check "a mounted encrypted target is fully released" 0 "$RC"
 check "the target's swapfile is deactivated" 0 0 "swapoff $TARGET/swap/swapfile" "$CALLS"
 check_absent "swap outside the target is left alone" "/dev/zram0" "$CALLS"
 check "the tree is unmounted" 0 0 "umount -R $TARGET" "$CALLS"
-check "the mapper off the mount table is closed" 0 0 "cryptsetup close omarchy_root" "$CALLS"
+check "the mapper off the mount table is closed" 0 0 "cryptsetup close collie_root" "$CALLS"
 # Swap is an invisible holder: with it still on, the unmount reports busy.
 call_order "swapoff comes before the unmount" '^swapoff' '^umount'
 
@@ -180,8 +180,8 @@ call_order "swapoff comes before the unmount" '^swapoff' '^umount'
 new_box
 echo 0 >"$BOX/mounted_rc"
 echo 1 >"$BOX/umount_rc"
-echo "/dev/mapper/omarchy_root[/@]" >"$BOX/sources"
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
+echo "/dev/mapper/collie_root[/@]" >"$BOX/sources"
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
 run_release
 check "a failed unmount fails the release" 1 "$RC" "could not unmount $TARGET" "$OUT"
 check "the holders are named on the way out" 0 0 "ACCESS COMMAND" "$OUT"
@@ -191,10 +191,10 @@ check_absent "a target still mounted is not swept for mappers" "cryptsetup" "$CA
 new_box
 echo 0 >"$BOX/mounted_rc"
 echo 1 >"$BOX/close_rc"
-echo "/dev/mapper/omarchy_root[/@]" >"$BOX/sources"
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
+echo "/dev/mapper/collie_root[/@]" >"$BOX/sources"
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
 run_release
-check "a mapper that stays open fails the release" 1 "$RC" "could not close mapper omarchy_root" "$OUT"
+check "a mapper that stays open fails the release" 1 "$RC" "could not close mapper collie_root" "$OUT"
 check "the unmount still happened" 0 0 "umount -R $TARGET" "$CALLS"
 
 # ── The crypt gate: cryptsetup would happily remove what is not ours ─────────
@@ -208,7 +208,7 @@ check_absent "cryptsetup is never called on an LVM mapping" "cryptsetup" "$CALLS
 
 new_box
 echo 0 >"$BOX/mounted_rc"
-echo "/dev/mapper/omarchy_root[/@]" >"$BOX/sources"   # no uuids entry: gone already
+echo "/dev/mapper/collie_root[/@]" >"$BOX/sources"   # no uuids entry: gone already
 run_release
 check "a mapper that is not there falls out silently" 0 "$RC"
 check_absent "no close is attempted on a missing mapper" "cryptsetup" "$CALLS"
@@ -216,12 +216,12 @@ check_absent "no close is attempted on a missing mapper" "cryptsetup" "$CALLS"
 # ── A dmsetup that cannot answer must not pass for "already gone" ────────────
 new_box
 echo 0 >"$BOX/mounted_rc"
-echo "/dev/mapper/omarchy_root[/@]" >"$BOX/sources"
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
+echo "/dev/mapper/collie_root[/@]" >"$BOX/sources"
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
 touch "$BOX/dmsetup_broken"
 run_release
 check "an unanswerable mapper query fails the release" 1 "$RC" \
-  "could not query mapper omarchy_root" "$OUT"
+  "could not query mapper collie_root" "$OUT"
 check_absent "no close is attempted on an unproven mapper" "cryptsetup" "$CALLS"
 
 # ── A close that errors while the mapper is provably gone is forgiven ────────
@@ -233,8 +233,8 @@ new_box
 echo 0 >"$BOX/mounted_rc"
 echo 1 >"$BOX/close_rc"
 touch "$BOX/close_removes"
-echo "/dev/mapper/omarchy_root[/@]" >"$BOX/sources"
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
+echo "/dev/mapper/collie_root[/@]" >"$BOX/sources"
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
 run_release
 check "a failed close with the mapper gone still releases" 0 "$RC"
 check_absent "and reports nothing to hold the medium for" "could not close" "$OUT"
@@ -243,30 +243,30 @@ check_absent "and reports nothing to hold the medium for" "could not close" "$OU
 new_box
 echo 0 >"$BOX/mounted_rc"
 echo 1 >"$BOX/close_rc"
-echo "/dev/mapper/omarchy_root[/@]" >"$BOX/sources"
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
+echo "/dev/mapper/collie_root[/@]" >"$BOX/sources"
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
 echo 1 >"$BOX/dmsetup_broken_after"   # the gate's query answers; every later call breaks
 run_release
 check "an unanswerable post-close probe fails the release" 1 "$RC" \
-  "could not close mapper omarchy_root" "$OUT"
+  "could not close mapper collie_root" "$OUT"
 
 # ── Mappers named as arguments: the open-but-never-mounted window ────────────
 new_box
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
-run_release omarchy_root
-check "a named mapper is closed with nothing mounted" 0 "$RC" "cryptsetup close omarchy_root" "$CALLS"
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
+run_release collie_root
+check "a named mapper is closed with nothing mounted" 0 "$RC" "cryptsetup close collie_root" "$CALLS"
 
 # ── A mapper mounted outside the target tree ─────────────────────────────────
 new_box
-echo "omarchy_root CRYPT-LUKS2-2b0e-omarchy_root" >"$BOX/uuids"
-echo "/run/omarchy-install/image-top" >"$BOX/mapper_mounts"
-run_release omarchy_root
+echo "collie_root CRYPT-LUKS2-2b0e-collie_root" >"$BOX/uuids"
+echo "/run/collie-install/image-top" >"$BOX/mapper_mounts"
+run_release collie_root
 check "a stage mount outside the target is unmounted" 0 "$RC" \
-  "umount -R /run/omarchy-install/image-top" "$CALLS"
+  "umount -R /run/collie-install/image-top" "$CALLS"
 call_order "the stage mount goes before the close" '^umount -R /run' '^cryptsetup close'
 
 if (( fails )); then
-  echo "omarchy-release-install-target: FAILED"
+  echo "collie-release-install-target: FAILED"
   exit 1
 fi
-echo "ok: omarchy-release-install-target sweeps and reports"
+echo "ok: collie-release-install-target sweeps and reports"

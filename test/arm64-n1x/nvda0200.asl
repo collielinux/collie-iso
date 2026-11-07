@@ -1,6 +1,6 @@
 /*
- * What an NVIDIA N1x's firmware describes and Omarchy's platform detector
- * (omarchy-hw-platform) looks for: an I2C controller with the ACPI ID
+ * What an NVIDIA N1x's firmware describes and Collie's platform detector
+ * (collie-hw-platform) looks for: an I2C controller with the ACPI ID
  * NVDA0200, MediaTek MT8901 IP on the N1x's CPU side.
  *
  * It has no resources. On an N1x they are its registers and its interrupt;

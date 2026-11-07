@@ -1,5 +1,5 @@
 """Unit tests for _run_timing_scripts: the finalizer's output is passed through
-unchanged, and each Omarchy install script gets a [step] line with its
+unchanged, and each Collie install script gets a [step] line with its
 duration in microseconds, timed from run_logged's Starting/Completed lines.
 A bash stand-in prints those lines around known sleeps."""
 
@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"))
 
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter", types.ModuleType("orchestrator.archinstall_adapter")
@@ -21,7 +21,7 @@ sys.modules.setdefault(
 from orchestrator import phases_impl  # noqa: E402
 
 FINALIZER = r'''
-log() { echo "[$(printf "%(%Y-%m-%d %H:%M:%S)T" -1)] $1: /usr/share/omarchy/install/$2"; }
+log() { echo "[$(printf "%(%Y-%m-%d %H:%M:%S)T" -1)] $1: /usr/share/collie/install/$2"; }
 log Starting config/fast.sh
 log Completed config/fast.sh
 log Starting hardware/slow.sh

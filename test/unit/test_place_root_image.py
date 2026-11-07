@@ -19,7 +19,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"))
 
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter", types.ModuleType("orchestrator.archinstall_adapter")
@@ -37,7 +37,7 @@ class InstallRootImageDdTest(unittest.TestCase):
         self.tmp = Path(tmp.name)
         self.target = self.tmp / "mnt"
         self.target.mkdir()
-        self.image = self.tmp / "omarchy-root.img.zst"
+        self.image = self.tmp / "collie-root.img.zst"
         self.image.write_bytes(b"\0" * 4096)
         self.ctx = types.SimpleNamespace(target=self.target, state_dir=self.tmp / "state")
         self.mounts = [
@@ -231,7 +231,7 @@ class InstallRootImageDdTest(unittest.TestCase):
     def test_files_beside_a_subvolume_deep_inside_the_esp_still_land_on_it(self):
         # Only the subvolume stays: its parent directories are walked, and
         # what sits beside it moves onto the ESP.
-        self.image_files = ["boot/EFI/Linux/omarchy.efi", "boot/EFI/BOOT/BOOTAA64.EFI", "boot/limine.conf"]
+        self.image_files = ["boot/EFI/Linux/collie.efi", "boot/EFI/BOOT/BOOTAA64.EFI", "boot/limine.conf"]
         self.mounts += [
             {"target": str(self.target / "boot"), "source": "/dev/vda1", "fstype": "vfat",
              "options": "rw,relatime,fmask=0077"},
@@ -240,7 +240,7 @@ class InstallRootImageDdTest(unittest.TestCase):
         ]
         self.install()
         top = self.ctx.state_dir / "image-top"
-        self.assertEqual((top / "@/boot/EFI/Linux/omarchy.efi").read_text(), "boot/EFI/Linux/omarchy.efi")
+        self.assertEqual((top / "@/boot/EFI/Linux/collie.efi").read_text(), "boot/EFI/Linux/collie.efi")
         self.assertEqual((self.target / "boot/EFI/BOOT/BOOTAA64.EFI").read_text(), "boot/EFI/BOOT/BOOTAA64.EFI")
         self.assertEqual((self.target / "boot/limine.conf").read_text(), "boot/limine.conf")
         self.assertEqual(sorted(p.name for p in (top / "@/boot/EFI").iterdir()), ["Linux"])
@@ -249,8 +249,8 @@ class InstallRootImageDdTest(unittest.TestCase):
         # FAT has no symlinks: a link is copied as the file it names, read
         # from the image while that is still in place, here inside a
         # subvolume that stays behind.
-        self.image_files = ["boot/EFI/Linux/omarchy.efi"]
-        self.image_links = [("boot/EFI/current.efi", "Linux/omarchy.efi"), ("boot/gone.efi", "nowhere.efi")]
+        self.image_files = ["boot/EFI/Linux/collie.efi"]
+        self.image_links = [("boot/EFI/current.efi", "Linux/collie.efi"), ("boot/gone.efi", "nowhere.efi")]
         self.mounts += [
             {"target": str(self.target / "boot"), "source": "/dev/vda1", "fstype": "vfat",
              "options": "rw,relatime,fmask=0077"},
@@ -260,15 +260,15 @@ class InstallRootImageDdTest(unittest.TestCase):
         self.install()
         current = self.target / "boot/EFI/current.efi"
         self.assertFalse(current.is_symlink())
-        self.assertEqual(current.read_text(), "boot/EFI/Linux/omarchy.efi")
+        self.assertEqual(current.read_text(), "boot/EFI/Linux/collie.efi")
         self.assertFalse(os.path.lexists(self.target / "boot/gone.efi"))
 
     def test_links_are_read_before_anything_is_removed(self):
         # Relative links resolve from where they sit, whatever the order the
         # directory lists them in; a loop is copied once; a link that names
         # nothing is dropped.
-        self.image_files = ["boot/kernel.efi", "boot/EFI/omarchy.efi", "boot/dtbs/qcom/a.dtb"]
-        self.image_links = [("boot/current.efi", "kernel.efi"), ("boot/EFI/current.efi", "omarchy.efi"),
+        self.image_files = ["boot/kernel.efi", "boot/EFI/collie.efi", "boot/dtbs/qcom/a.dtb"]
+        self.image_links = [("boot/current.efi", "kernel.efi"), ("boot/EFI/current.efi", "collie.efi"),
                             ("boot/dtbs/latest", "qcom"), ("boot/dtbs/qcom/loop", ".."),
                             ("boot/EFI/gone.efi", "missing.efi")]
         self.mounts.append(
@@ -277,7 +277,7 @@ class InstallRootImageDdTest(unittest.TestCase):
         self.install()
         boot = self.target / "boot"
         self.assertEqual((boot / "current.efi").read_text(), "boot/kernel.efi")
-        self.assertEqual((boot / "EFI/current.efi").read_text(), "boot/EFI/omarchy.efi")
+        self.assertEqual((boot / "EFI/current.efi").read_text(), "boot/EFI/collie.efi")
         self.assertEqual((boot / "dtbs/latest/a.dtb").read_text(), "boot/dtbs/qcom/a.dtb")
         self.assertFalse(any(p.is_symlink() for p in boot.rglob("*")))
         self.assertFalse(os.path.lexists(boot / "EFI/gone.efi"))
@@ -379,7 +379,7 @@ class FinalizeBootAndUserTest(unittest.TestCase):
         with mock.patch.object(phases_impl, "finalize_limine_boot", side_effect=boot), \
              mock.patch.object(phases_impl, "run_chroot_finalizer", side_effect=user), \
              mock.patch.dict(phases_impl.os.environ, {}, clear=False):
-            phases_impl.os.environ.pop("OMARCHY_SERIAL_FINALIZE", None)
+            phases_impl.os.environ.pop("COLLIE_SERIAL_FINALIZE", None)
             phases_impl.finalize_boot_and_user(self.ctx())
         # The user chroot gets its own mount namespace.
         self.assertEqual(seen, {"boot": True, "user": True})

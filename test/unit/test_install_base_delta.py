@@ -123,7 +123,7 @@ class TargetPackagesTest(unittest.TestCase):
 
     def test_the_image_check_reads_names_not_what_they_provide(self):
         self.assertEqual(self.arch.target_package_names(self.target), set())
-        self.install("omarchy-dev", "4.5.0.r7311.g2fca7fe-1", ["omarchy=4.5.0.r7311.g2fca7fe"])
+        self.install("omarchy-dev", "4.5.0.r7311.g2fca7fe-1", ["collie=4.5.0.r7311.g2fca7fe"])
         self.install("limine", "11.2.1-1")
         self.assertEqual(self.arch.target_package_names(self.target), {"omarchy-dev", "limine"})
 

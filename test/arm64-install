@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Installs an aarch64 Omarchy ISO unattended in a VM, reboots into what it
+# Installs an aarch64 Collie ISO unattended in a VM, reboots into what it
 # installed and checks the result over SSH: the whole path a machine takes,
 # with nobody at the keyboard.
 #
-#   test/arm64-install <omarchy.iso> <evidence_dir>
+#   test/arm64-install <collie.iso> <evidence_dir>
 #
 # The answers are the ones the x86_64 integration harness gives its installs
 # (build_cidata in test/integration.d/base-test.sh), changed where the
@@ -18,11 +18,11 @@
 # Env: TIMEOUT (seconds for install and first boot, default 1500), SMP (8),
 #      MEM (12G), MACHINE (virt with ACPI; test/arm64-live-boot says why the GIC
 #      is set as it is), KERNEL (linux-omarchy),
-#      PLATFORM (aarch64-n1x: the VM's firmware carries what Omarchy reads
-#      from an NVIDIA N1x's, test/arm64-n1x, so Omarchy's own detector names
+#      PLATFORM (aarch64-n1x: the VM's firmware carries what Collie reads
+#      from an NVIDIA N1x's, test/arm64-n1x, so Collie's own detector names
 #      the machine one and installs and sets it up as one),
 #      MIRROR (where the installed system gets Arch Linux ARM's packages:
-#      Omarchy's own mirror of them).
+#      Collie's own mirror of them).
 set -euo pipefail
 [[ $# -eq 2 ]] || { sed -n '2,22p' "$0" >&2; exit 2; }
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -51,11 +51,11 @@ cleanup() {
 trap cleanup EXIT
 
 # --- answers ---------------------------------------------------------------
-GUEST_USER=omarchy GUEST_PASSWORD=omarchy GUEST_HOSTNAME=omarchy-arm64
+GUEST_USER=collie GUEST_PASSWORD=collie GUEST_HOSTNAME=collie-arm64
 BASE_DIR=$state SSH_KEY=$state/id_ed25519 CIDATA_IMG=$state/cidata.img
 ssh-keygen -q -t ed25519 -N '' -C arm64-install -f "$SSH_KEY"
 # The harness's own functions, so the two cannot drift apart: detect_packages
-# names the runtime the ISO's channel installs (omarchy-dev on edge, omarchy on
+# names the runtime the ISO's channel installs (omarchy-dev on edge, collie on
 # rc and stable), and build_cidata ends by writing the image; the
 # architecture's answers are changed and it is redone.
 eval "$(sed -n '/^detect_packages() {$/,/^}$/p' "$ROOT/test/integration.d/base-test.sh")"
@@ -64,13 +64,13 @@ eval "$(sed -n '/^cidata_cloud_init() {$/,/^}$/p' "$ROOT/test/integration.d/base
 # ... and the harness's settings, with its defaults, which build_cidata reads:
 # the disk it lays the partitions out for, the UKI, encryption and keyboard
 # choices. All of them, so a setting the harness adds later comes along too.
-eval "$(grep -E '^[A-Z_]+="\$\{OMARCHY_INTEGRATION_[A-Z_]+:-[^}]*\}"$' "$ROOT/test/integration.d/base-test.sh")"
+eval "$(grep -E '^[A-Z_]+="\$\{COLLIE_INTEGRATION_[A-Z_]+:-[^}]*\}"$' "$ROOT/test/integration.d/base-test.sh")"
 ISO=$iso detect_packages
 build_cidata
 answers=$state/cidata/user_configuration.json
 jq --arg kernel "${KERNEL:-linux-omarchy}" --arg mirror "${MIRROR:-https://arm-mirror.omarchy.org/\$arch/\$repo}" '
-  .omarchy_install.boot.efi_binary = "limine_aa64.efi"
-  | .omarchy_install.storage.kernel = $kernel
+  .collie_install.boot.efi_binary = "limine_aa64.efi"
+  | .collie_install.storage.kernel = $kernel
   | .kernels = [$kernel]
   | .mirror_config.custom_servers = [{url: $mirror}]' "$answers" >"$answers.new"
 mv "$answers.new" "$answers"
@@ -180,21 +180,21 @@ check() { # description, then a command run in the guest that must succeed
     "pacman -Qo /usr/lib/modules/\$(uname -r) | grep -q ' ${KERNEL:-linux-omarchy} '"
   check "the user can use sudo" "echo $GUEST_PASSWORD | sudo -S -p '' true"
   check "it booted through Limine's unified kernel image" \
-    "echo $GUEST_PASSWORD | sudo -S -p '' sh -c 'ls /boot/EFI/Linux/omarchy_*.efi'"
-  check "the Omarchy runtime is installed" "pacman -Q $RUNTIME_PACKAGE"
+    "echo $GUEST_PASSWORD | sudo -S -p '' sh -c 'ls /boot/EFI/Linux/collie_*.efi'"
+  check "the Collie runtime is installed" "pacman -Q $RUNTIME_PACKAGE"
   # A runtime from before lazy Node unpacked the one the ISO bundled for it.
   check "Node waits for its first use, or came from the ISO for this architecture" \
     'node=$(ls ~/.local/share/mise/installs/node/*/bin/node 2>/dev/null | head -n 1); if [ -n "$node" ]; then file -bL "$node" | grep -q aarch64; else [ -x ~/.local/share/mise/shims/node ]; fi'
-  check "packages come from Omarchy's mirror and nowhere else" \
+  check "packages come from Collie's mirror and nowhere else" \
     "grep -q '^Server.*omarchy\.org' /etc/pacman.d/mirrorlist && ! grep '^Server' /etc/pacman.d/mirrorlist | grep -vq 'omarchy\.org'"
   if [[ -n ${PLATFORM:-} ]]; then
     # The machine's own word for what it is, which every platform-specific
     # step of the install and of the system after it goes by.
-    said=$(guest omarchy-hw-platform 2>&1) || true
-    check "Omarchy's detector names it $PLATFORM (it says ${said:-nothing})" \
-      "[ \"\$(omarchy-hw-platform)\" = $PLATFORM ]"
+    said=$(guest collie-hw-platform 2>&1) || true
+    check "Collie's detector names it $PLATFORM (it says ${said:-nothing})" \
+      "[ \"\$(collie-hw-platform)\" = $PLATFORM ]"
     check "the installer took the $PLATFORM default set" \
-      "echo $GUEST_PASSWORD | sudo -S -p '' grep -aq 'omarchy-base.$PLATFORM.packages' /var/log/omarchy-install.log"
+      "echo $GUEST_PASSWORD | sudo -S -p '' grep -aq 'collie-base.$PLATFORM.packages' /var/log/collie-install.log"
   fi
   if [[ ${PLATFORM:-} == aarch64-n1x ]]; then
     check "the NVIDIA module is built for the running kernel" 'modinfo -k "$(uname -r)" nvidia'
@@ -202,14 +202,14 @@ check() { # description, then a command run in the guest that must succeed
 } | tee "$out/checks"
 failures=$(grep -c '^not ok' "$out/checks" || true)
 guest 'uname -r; cat /proc/cmdline; systemctl --failed --no-legend; grep -E "^Server" /etc/pacman.d/mirrorlist' >"$out/facts" 2>&1 || true
-# What a nightly says it published: the Omarchy package, then the kernel.
+# What a nightly says it published: the Collie package, then the kernel.
 guest 'pacman -Q omarchy-dev omarchy 2>/dev/null; uname -r' >"$out/packages.txt" 2>/dev/null || true
 # The timings the x86_64 test reports: the installer's own, and this boot's.
-guest "echo $GUEST_PASSWORD | sudo -S -p '' cat /var/log/omarchy-install-timing.json" >"$out/omarchy-install-timing.json" 2>/dev/null || true
+guest "echo $GUEST_PASSWORD | sudo -S -p '' cat /var/log/collie-install-timing.json" >"$out/collie-install-timing.json" 2>/dev/null || true
 guest 'systemd-analyze' >"$out/first-boot-systemd-analyze.txt" 2>/dev/null || true
 ssh -i "$SSH_KEY" -p "$port" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=no \
-  -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR "$GUEST_USER@127.0.0.1" "sudo -S -p '' cat /var/log/omarchy-install.log" \
-  <<<"$GUEST_PASSWORD" >"$out/omarchy-install.log" 2>/dev/null || true
+  -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR "$GUEST_USER@127.0.0.1" "sudo -S -p '' cat /var/log/collie-install.log" \
+  <<<"$GUEST_PASSWORD" >"$out/collie-install.log" 2>/dev/null || true
 screen "$out/shots/installed.png" >/dev/null
 # The boot of every day after the first, as the x86_64 test measures it.
 mkdir -p "$out/runs/everyday-boot"

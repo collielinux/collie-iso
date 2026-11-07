@@ -28,7 +28,7 @@ check() {
 
 fixture() {
   rm -rf "$WORK/root" "$WORK/sync"
-  local runtime="$WORK/root/usr/share/omarchy"
+  local runtime="$WORK/root/usr/share/collie"
   mkdir -p "$runtime/default/pacman/aarch64" "$runtime/install/hardware" \
     "$WORK/root/var/lib/pacman/sync" "$WORK/sync"
   printf '[options]\nArchitecture = auto\n\n[omarchy]\n[core]\n[extra]\n[multilib]\n' \
@@ -45,7 +45,7 @@ fixture() {
 }
 shipped() { (cd "$WORK/root/var/lib/pacman/sync" && ls | tr '\n' ' ' | sed 's/ $//'); }
 
-fixture omarchy core extra multilib arch-mact2 platform aur
+fixture collie core extra multilib arch-mact2 platform aur
 bash "$TOOL" "$WORK/root" "$WORK/sync" >/dev/null
 check "x86: exit status" 0 $?
 check "x86: the runtime's repositories and the T2 one, offline.db kept, build-only ones left behind" \
@@ -53,7 +53,7 @@ check "x86: the runtime's repositories and the T2 one, offline.db kept, build-on
 check "x86: the index keeps its mtime" \
   "$(stat -c %Y "$WORK/sync/core.db")" "$(stat -c %Y "$WORK/root/var/lib/pacman/sync/core.db")"
 
-fixture platform omarchy core extra alarm aur
+fixture platform collie core extra alarm aur
 bash "$TOOL" "$WORK/root" "$WORK/sync" >/dev/null
 check "aarch64: exit status" 0 $?
 check "aarch64: [alarm] shipped, the file:// [platform] bundle and [aur] not" \
@@ -63,8 +63,8 @@ fixture core extra
 bash "$TOOL" "$WORK/root" "$WORK/sync" >/dev/null 2>&1
 check "no omarchy.db: the build stops" 1 $?
 
-fixture omarchy core extra
-rm -rf "$WORK/root/usr/share/omarchy/default/pacman"
+fixture collie core extra
+rm -rf "$WORK/root/usr/share/collie/default/pacman"
 bash "$TOOL" "$WORK/root" "$WORK/sync" >/dev/null 2>&1
 check "no pacman.conf templates: the build stops" 1 $?
 

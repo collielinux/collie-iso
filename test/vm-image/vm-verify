@@ -13,7 +13,7 @@ base=$(realpath "$1")
 uuid=$(cat /proc/sys/kernel/random/uuid)
 export VM_UUID=$uuid SSH_PORT=$(( 20000 + RANDOM % 10000 ))
 
-VM_PW=${GUEST_PASSWORD:-omarchy} "$here/vm-boot" "$base" "WANT_ID=${uuid//-/} PW=${GUEST_PASSWORD:-omarchy} bash -s" <<'GUEST'
+VM_PW=${GUEST_PASSWORD:-collie} "$here/vm-boot" "$base" "WANT_ID=${uuid//-/} PW=${GUEST_PASSWORD:-collie} bash -s" <<'GUEST'
 fail=0
 check() { # description, then a command that must succeed
   local what=$1; shift
@@ -33,7 +33,7 @@ check "SSH refuses passwords" sh -c "printf '%s\n' '$PW' | sudo -S -p '' sshd -T
 check "SSH requires a key" sh -c "printf '%s\n' '$PW' | sudo -S -p '' sshd -T | grep -qix 'authenticationmethods publickey'"
 # Asking with no method makes sshd list the ones it would take.
 check "sshd offers a key as the only way in" \
-  sh -c 'ssh -o PreferredAuthentications=none -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null omarchy@127.0.0.1 true 2>&1 | grep -qF "Permission denied (publickey)."'
+  sh -c 'ssh -o PreferredAuthentications=none -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null collie@127.0.0.1 true 2>&1 | grep -qF "Permission denied (publickey)."'
 check "authorized_keys holds one key, this boot's" [ "$(grep -c . ~/.ssh/authorized_keys)" = 1 ]
 check "SSH host keys were made by this boot" newer /etc/ssh/ssh_host_ed25519_key
 check "NetworkManager's key was made by this boot" newer /var/lib/NetworkManager/secret_key

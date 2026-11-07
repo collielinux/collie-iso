@@ -1,6 +1,6 @@
 # Shared netboot rig: the TFTP root and NBD export that fake a PXE LAN
 # inside QEMU's user-mode networking. Sourced by test/integration.d/
-# pxe-test.sh (the scenario) and bin/omarchy-iso-boot-pxe (its hands-on
+# pxe-test.sh (the scenario) and bin/collie-iso-boot-pxe (its hands-on
 # twin) so the two can never drift apart — what the test proves is exactly
 # what the tool boots.
 

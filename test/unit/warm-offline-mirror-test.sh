@@ -19,17 +19,17 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 warm=$(sed -n '/^warm_offline_mirror() {$/,/^}$/p' "$SCRIPT")
 [[ -n $warm ]] || fail "warm_offline_mirror is gone from .automated_script.sh"
 warm=${warm//\/run\/archiso\/bootmnt/$fixture/medium}
-warm=${warm//\/var\/cache\/omarchy\/mirror\/offline/$fixture/mirror}
+warm=${warm//\/var\/cache\/collie\/mirror\/offline/$fixture/mirror}
 warm=${warm//\/proc\/meminfo/$fixture/meminfo}
 
 mkdir -p "$fixture/bin" "$fixture/medium/arch/$(uname -m)" "$fixture/mirror"
-head -c 65536 /dev/zero >"$fixture/medium/arch/$(uname -m)/omarchy-root.img.zst"
+head -c 65536 /dev/zero >"$fixture/medium/arch/$(uname -m)/collie-root.img.zst"
 head -c 65536 /dev/zero >"$fixture/mirror/linux-firmware-1-1-any.pkg.tar.zst"
 echo "MemAvailable:    8388608 kB" >"$fixture/meminfo"
 
 # Each systemctl call answers for the next phase of the boot (the last one
 # repeats), the way systemd reports it in that phase:
-#   mirror    omarchy-mirror-verify.service hashing; the image's start job
+#   mirror    collie-mirror-verify.service hashing; the image's start job
 #             queued behind it (Before=), so that unit is still inactive
 #   image     the mirror check finished, the image hashing
 #   finished  both checks finished, no jobs left
@@ -40,13 +40,13 @@ phase=\${phases[0]}
 ((\${#phases[@]} == 1)) || printf '%s\n' "\${phases[@]:1}" >"$fixture/phases"
 echo "\$phase" >"$fixture/now"
 case "\$1 \$phase" in
-  "is-active mirror")   [[ \$* == *omarchy-mirror-verify* ]] && echo activating || echo inactive ;;
-  "is-active image")    [[ \$* == *omarchy-mirror-verify* ]] && echo active || echo activating ;;
+  "is-active mirror")   [[ \$* == *collie-mirror-verify* ]] && echo activating || echo inactive ;;
+  "is-active image")    [[ \$* == *collie-mirror-verify* ]] && echo active || echo activating ;;
   "is-active finished") echo active ;;
   "list-jobs mirror")
-    echo "1 omarchy-mirror-verify.service     start running"
-    echo "2 omarchy-root-image-verify.service start waiting" ;;
-  "list-jobs image")  echo "2 omarchy-root-image-verify.service start running" ;;
+    echo "1 collie-mirror-verify.service     start running"
+    echo "2 collie-root-image-verify.service start waiting" ;;
+  "list-jobs image")  echo "2 collie-root-image-verify.service start running" ;;
 esac
 exit 0
 EOF
@@ -68,11 +68,11 @@ warm_reads() { # the boot's phases, one per systemctl call -> the reads, one per
 }
 
 reads=$(warm_reads mirror mirror image image finished)
-[[ $reads == $'finished omarchy-root.img.zst\nfinished linux-firmware-1-1-any.pkg.tar.zst' ]] \
+[[ $reads == $'finished collie-root.img.zst\nfinished linux-firmware-1-1-any.pkg.tar.zst' ]] \
   || fail "the warm-up read the medium before both checks had finished: $(paste -sd, <<<"$reads")"
 
 reads=$(warm_reads finished)
-[[ $reads == $'finished omarchy-root.img.zst\nfinished linux-firmware-1-1-any.pkg.tar.zst' ]] \
+[[ $reads == $'finished collie-root.img.zst\nfinished linux-firmware-1-1-any.pkg.tar.zst' ]] \
   || fail "the warm-up does not read the medium once the checks are done: $(paste -sd, <<<"$reads")"
 
 echo "warm offline mirror tests passed"

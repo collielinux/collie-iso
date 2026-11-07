@@ -7,7 +7,7 @@
 #
 #   date              today, as YYYY.MM.DD
 #   event             what started the run: schedule, workflow_dispatch
-#   release_tag       omacom/omarchy's latest release, such as v4.0.4
+#   release_tag       collielinux/collie's latest release, such as v4.0.4
 #   published_stable  the version stable/latest.json names now, if any
 #
 # Prints a JSON list of {channel, arch, version, release}; release is the path

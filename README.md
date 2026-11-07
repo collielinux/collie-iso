@@ -1,10 +1,10 @@
-# Omarchy ISO
+# Collie ISO
 
 [![Nightly ISO Build](https://github.com/omacom/omarchy-iso/actions/workflows/nightly-build.yml/badge.svg?branch=quattro&event=schedule)](https://github.com/omacom/omarchy-iso/actions/workflows/nightly-build.yml?query=branch%3Aquattro+event%3Aschedule)
 
-The Omarchy ISO is the only supported way to install Omarchy. It ships the Omarchy Configurator, writes a pre-built Arch Linux + Omarchy root image (a zstd-compressed btrfs partition image) onto the target with `zstdcat | dd`, gives it a fresh filesystem id and grows it to the partition, installs the per-machine packages (audio firmware, and a kernel the image lacks) from the bundled mirror, runs target system setup in the chroot, creates the user, and runs `omarchy-provision-user` for that user.
+The Collie ISO is the only supported way to install Collie. It ships the Collie Configurator, writes a pre-built Arch Linux + Collie root image (a zstd-compressed btrfs partition image) onto the target with `zstdcat | dd`, gives it a fresh filesystem id and grows it to the partition, installs the per-machine packages (audio firmware, and a kernel the image lacks) from the bundled mirror, runs target system setup in the chroot, creates the user, and runs `collie-provision-user` for that user.
 
-## Get Omarchy
+## Get Collie
 
 1. [Download the ISO](https://omarchy.org).
 2. Write it to a USB stick. Use [balenaEtcher](https://etcher.balena.io/) on Mac or Windows, or [caligula](https://github.com/ifd3f/caligula) on Linux.
@@ -18,18 +18,18 @@ The install takes under a minute on the fastest machines and up to 5 minutes on 
 
 Verify the ISO before you write it to the stick. Otherwise, a corrupted download causes a pacman "invalid or corrupted package" error several minutes into the install.
 
-Every release ISO has a `.sha256` file and a `.sig` file next to it. Run these commands to download and verify the ISO of the latest release of [omacom/omarchy](https://github.com/omacom/omarchy/releases):
+Every release ISO has a `.sha256` file and a `.sig` file next to it. Run these commands to download and verify the ISO of the latest release of [collielinux/collie](https://github.com/collielinux/collie/releases):
 
 ```bash
-version=$(curl -fsSL https://api.github.com/repos/omacom/omarchy/releases/latest | jq -r .tag_name)
+version=$(curl -fsSL https://api.github.com/repos/collielinux/collie/releases/latest | jq -r .tag_name)
 version=${version#v}
-iso=omarchy-$version-x86.iso
+iso=collie-$version-x86.iso
 curl -fLO "https://iso.omarchy.org/$iso"
 curl -fsSLO "https://iso.omarchy.org/$iso.sha256"
 sha256sum -c "$iso.sha256"
 ```
 
-The checksum only catches a corrupted download. The `.sig` file proves that Omarchy built the ISO. Fetch the Omarchy signing key by its full fingerprint, then verify the ISO with GnuPG:
+The checksum only catches a corrupted download. The `.sig` file proves that Collie built the ISO. Fetch the Collie signing key by its full fingerprint, then verify the ISO with GnuPG:
 
 ```bash
 gpg --keyserver hkps://keys.openpgp.org --recv-keys 40DFB630FF42BCFFB047046CF0134EE680CAC571
@@ -37,12 +37,12 @@ curl -fsSLO "https://iso.omarchy.org/$iso.sig"
 gpg --verify "$iso.sig" "$iso"
 ```
 
-The output must say `Good signature from "Omarchy <pkgs@omarchy.org>"` and show the key `40DFB630FF42BCFFB047046CF0134EE680CAC571`. A warning that the key is not certified with a trusted signature is expected. It means only that you have not signed the key yourself.
+The output must say `Good signature from "Collie <pkgs@omarchy.org>"` and show the key `40DFB630FF42BCFFB047046CF0134EE680CAC571`. A warning that the key is not certified with a trusted signature is expected. It means only that you have not signed the key yourself.
 
 ### More in the manual
 
 - [Getting started](https://omarchy.org/manual/getting-started/): the install step by step, installing for another owner, and installing without encryption.
-- [Dual-boot install](https://omarchy.org/manual/dual-boot-install/): install Omarchy in the free space of a drive, beside Windows or another OS.
+- [Dual-boot install](https://omarchy.org/manual/dual-boot-install/): install Collie in the free space of a drive, beside Windows or another OS.
 - [Unattended installs](https://omarchy.org/manual/unattended-installs/): let the ISO install itself from a configuration on a second drive, with no keyboard and no wizard.
 
 # For maintainers
@@ -53,10 +53,10 @@ The rest of this file covers building, testing and publishing the ISO.
 
 | What | Where | When |
 | --- | --- | --- |
-| Release ISO | `https://iso.omarchy.org/omarchy-<version>-x86.iso` and `-aarch64.iso` (before 4.5.0: `omarchy-<version>.iso`) | Each release |
-| Edge ISO | `https://nightly.omarchy.org/edge/<version>/omarchy-edge-<version>.iso` | Every night |
-| VM image of edge | `https://nightly.omarchy.org/edge/<version>/omarchy-edge-<version>.qcow2` | Every night |
-| VM image of the latest release | `https://nightly.omarchy.org/stable/<version>/<run>/omarchy-<version>.qcow2` | Once per release |
+| Release ISO | `https://iso.omarchy.org/collie-<version>-x86.iso` and `-aarch64.iso` (before 4.5.0: `collie-<version>.iso`) | Each release |
+| Edge ISO | `https://nightly.omarchy.org/edge/<version>/collie-edge-<version>.iso` | Every night |
+| VM image of edge | `https://nightly.omarchy.org/edge/<version>/collie-edge-<version>.qcow2` | Every night |
+| VM image of the latest release | `https://nightly.omarchy.org/stable/<version>/<run>/collie-<version>.qcow2` | Once per release |
 | `latest.json` | `https://nightly.omarchy.org/edge/latest.json` and `.../stable/latest.json` | With each nightly build |
 
 Every ISO and every VM image has a `.sha256` file next to it. The release ISO also has a `.sig` file. Each VM image has an `unpacked/` folder next to it.
@@ -67,8 +67,8 @@ On nightly.omarchy.org, a published file is never replaced. Only `latest.json` c
 
 `.github/workflows/nightly-build.yml` runs every night for two channels:
 
-- `edge`: builds the ISO from the edge channel: the edge packages and mirrors, and the edge builds of Omarchy (`omarchy-dev`).
-- `stable`: uses the latest release. The latest release of omacom/omarchy determines the version. The ISO comes from iso.omarchy.org and is used only if its signature matches the release key. A scheduled run skips a release that is already published. A manual run builds it again.
+- `edge`: builds the ISO from the edge channel: the edge packages and mirrors, and the edge builds of Collie (`omarchy-dev`).
+- `stable`: uses the latest release. The latest release of collielinux/collie determines the version. The ISO comes from iso.omarchy.org and is used only if its signature matches the release key. A scheduled run skips a release that is already published. A manual run builds it again.
 
 Each ISO goes through the same install test that runs for pull requests: an unattended install, then a boot of the installed system. `test/vm-image/vm-seal` then turns the installed disk into a VM image, and `test/vm-image/vm-verify` boots that image and checks it. Nothing is published unless every check passes.
 
@@ -85,9 +85,9 @@ A separate job publishes. It is the only job with the bucket's key, and it runs 
 | `built_at` | When this file was written, after the image passed its checks. UTC, `2026-10-09T18:02:35Z`. |
 | `url` | The ISO that was installed. Edge: on nightly.omarchy.org. Stable: the release ISO on iso.omarchy.org. |
 | `sha256`, `size` | The ISO's SHA-256 and its size in bytes. |
-| `iso_commit` | The omarchy-iso commit the nightly build ran from. |
-| `omarchy_version` | The version of the Omarchy package in the image. |
-| `omarchy_commit` | Edge: the omarchy commit that package was built from. Stable: empty. |
+| `iso_commit` | The collie-iso commit the nightly build ran from. |
+| `omarchy_version` | The version of the Collie package in the image. |
+| `collie_commit` | Edge: the collie commit that package was built from. Stable: empty. |
 | `kernel` | The image's kernel release, as reported by `uname -r`. |
 | `vm.url`, `vm.sha256`, `vm.size` | The VM image: its URL, SHA-256 and size in bytes. |
 | `vm.unpacked` | The URL of the image's `unpacked/` folder, ending in `/`. |
@@ -101,9 +101,9 @@ The version is also in the edge ISO's file name.
 
 VM images are for testing. Users download the release ISO from iso.omarchy.org.
 
-A VM image is Omarchy already installed, as one `.qcow2` file. There is an image of the edge channel, rebuilt every night, and an image of the latest release. Every boot is a new machine, with a new machine ID and new SSH host keys.
+A VM image is Collie already installed, as one `.qcow2` file. There is an image of the edge channel, rebuilt every night, and an image of the latest release. Every boot is a new machine, with a new machine ID and new SSH host keys.
 
-The user is `omarchy` and the password is `omarchy`. SSH takes keys only.
+The user is `collie` and the password is `collie`. SSH takes keys only.
 
 ### Boot the image by itself
 
@@ -182,7 +182,7 @@ Encryption itself is configured by the `disk_encryption` block inside `user_conf
 ssh-ed25519 AAAA... you@host
 ```
 
-When `authorized_keys` is present, autoinstall installs it as the user's `~/.ssh/authorized_keys`, enables `sshd`, and adds a `ufw allow ssh` rule — a stock Omarchy install ships openssh with the service disabled and its firewall opens neither port 22 nor anything else beyond LocalSend and Docker's DNS. Networking needs nothing extra; NetworkManager is already enabled with DHCP. Password SSH authentication is left at the distro default. An `authorized_keys` with no keys in it fails the install rather than producing a machine nobody can reach.
+When `authorized_keys` is present, autoinstall installs it as the user's `~/.ssh/authorized_keys`, enables `sshd`, and adds a `ufw allow ssh` rule — a stock Collie install ships openssh with the service disabled and its firewall opens neither port 22 nor anything else beyond LocalSend and Docker's DNS. Networking needs nothing extra; NetworkManager is already enabled with DHCP. Password SSH authentication is left at the distro default. An `authorized_keys` with no keys in it fails the install rather than producing a machine nobody can reach.
 
 When `tailscale_authkey` is present (one key, blank lines and `#` comments ignored), the install adds the `tailscale` package from the ISO's bundled mirror — nothing is fetched from the network at install or boot — and stages the join for first boot: the key lands at `/etc/tailscale/authkey` (root-only), `tailscaled` is enabled, ufw allows traffic in on `tailscale0`, and a background unit runs `tailscale up` once the network is actually up, retrying until it succeeds without holding up the boot. After a successful join the key is deleted and the unit disables itself; until then both survive reboots, so a machine installed offline joins whenever it first gets connectivity. The node appears on the tailnet under the configured hostname. Use a reusable, pre-authorized (tagged) key so one drive image serves many machines — or an ephemeral key for disposable VMs.
 
@@ -197,56 +197,56 @@ genisoimage -output cidata.iso -volid cidata -joliet -rock cidata/
 ### Proxmox example
 
 ```bash
-qm create 101 --name my-omarchy \
+qm create 101 --name my-collie \
   --bios ovmf --machine q35 --cpu host --cores 4 --memory 8192 \
   --ostype l26 --scsihw virtio-scsi-single \
   --efidisk0 local-lvm:0,efitype=4m,pre-enrolled-keys=0 \
   --scsi0 local-lvm:40,discard=on,iothread=1 \
   --net0 virtio,bridge=vmbr0 --vga virtio --serial0 socket \
-  --ide2 local:iso/omarchy.iso,media=cdrom \
+  --ide2 local:iso/collie.iso,media=cdrom \
   --ide3 local:iso/cidata.iso,media=cdrom \
   --boot order='scsi0;ide2'
 
 qm start 101
 ```
 
-Boot order is disk first: the empty disk falls through to the ISO on the first boot, and the installed system boots from disk afterwards. The machine reboots into Omarchy on its own when the install finishes.
+Boot order is disk first: the empty disk falls through to the ISO on the first boot, and the installed system boots from disk afterwards. The machine reboots into Collie on its own when the install finishes.
 
 Encrypted autoinstalls are not fully unattended — the LUKS passphrase prompt still needs someone at the first boot.
 
-`omarchy_install.language` in `user_configuration.json` takes a code from Omarchy's language registry, like `da` or `ja`, and becomes the installed system's language. Leave it out, or set `en`, for English.
+`collie_install.language` in `user_configuration.json` takes a code from Collie's language registry, like `da` or `ja`, and becomes the installed system's language. Leave it out, or set `en`, for English.
 
 ## Translations
 
-The configurator asks for a language first, on the screen that carries the intro and the hidden Ctrl+C entry into preparing the machine for another owner. It offers every language in Omarchy's registry (`default/i18n/locales.json` in the settings package). A language with a catalog in `configs/airootfs/usr/share/omarchy-iso/i18n/` also translates the installer. The others are listed by their English name, the installer stays in English, and the language still goes to the installed system as `/etc/omarchy/language`. The keyboard list then preselects the language's layout from `language-defaults.json`. The timezone list preselects the network's guess, and when that fails, the capital of the language's country from the same file. English, Arabic, Swahili and Tamil have no single home country, so they fall back to the plain timezone search.
+The configurator asks for a language first, on the screen that carries the intro and the hidden Ctrl+C entry into preparing the machine for another owner. It offers every language in Collie's registry (`default/i18n/locales.json` in the settings package). A language with a catalog in `configs/airootfs/usr/share/collie-iso/i18n/` also translates the installer. The others are listed by their English name, the installer stays in English, and the language still goes to the installed system as `/etc/collie/language`. The keyboard list then preselects the language's layout from `language-defaults.json`. The timezone list preselects the network's guess, and when that fails, the capital of the language's country from the same file. English, Arabic, Swahili and Tamil have no single home country, so they fall back to the plain timezone search.
 
 Catalogs exist only for languages the live console can draw. The kernel's own console fonts carry just the IBM PC character set, so the installer loads Terminus, patched by `console-font.py` with the half blocks the logo is drawn with. That covers Latin, Greek and Cyrillic. CJK, Arabic, Hebrew, the Indic scripts, Thai and Vietnamese are beyond any 512-glyph console font.
 
-To add a string, put it in `en.json` and print it with `t <key> [args]`, where `%1`, `%2` take the arguments. A catalog that lacks the key shows it in English until a translation lands. `test/unit/test_installer_i18n.py` fails on a key English does not have, on placeholders that differ from English, and on a character the patched font cannot draw. The setup form vendored from Omarchy translates its own strings from Omarchy's catalogs, in the language the configurator names in `OMARCHY_FORM_LANGUAGE`, and takes the keyboard default and the offline timezone through `OMARCHY_FORM_KEYBOARD_DEFAULT` and `OMARCHY_FORM_TIMEZONE_FALLBACK`.
+To add a string, put it in `en.json` and print it with `t <key> [args]`, where `%1`, `%2` take the arguments. A catalog that lacks the key shows it in English until a translation lands. `test/unit/test_installer_i18n.py` fails on a key English does not have, on placeholders that differ from English, and on a character the patched font cannot draw. The setup form vendored from Collie translates its own strings from Collie's catalogs, in the language the configurator names in `COLLIE_FORM_LANGUAGE`, and takes the keyboard default and the offline timezone through `COLLIE_FORM_KEYBOARD_DEFAULT` and `COLLIE_FORM_TIMEZONE_FALLBACK`.
 
 ## Creating the ISO
 
-Run `./bin/omarchy-iso-make`; output goes into `./release`. By default the ISO uses the Omarchy packages and tracks the `quattro` branch, from the stable mirror. Pass `--edge` to use `omarchy-dev` and `omarchy-settings-dev` from the edge mirror.
+Run `./bin/collie-iso-make`; output goes into `./release`. By default the ISO uses the Collie packages and tracks the `quattro` branch, from the stable mirror. Pass `--edge` to use `omarchy-dev` and `omarchy-settings-dev` from the edge mirror.
 
 For local development, build the ISO from sibling checkouts:
 
 ```bash
-./bin/omarchy-iso-make --local-source ../omarchy-installer ../omarchy-pkgs
+./bin/collie-iso-make --local-source ../omarchy-installer ../omarchy-pkgs
 ```
 
-Despite the local folder name, the first argument is the Omarchy source checkout (runtime commands, configs, setup scripts, themes, shell, migrations). The installer itself lives in this ISO repo.
+Despite the local folder name, the first argument is the Collie source checkout (runtime commands, configs, setup scripts, themes, shell, migrations). The installer itself lives in this ISO repo.
 
 Use `--dev` or `--rc` to build against those package channels. Both `--dev` and `--edge` select the dev packages from the edge mirror.
 
 ### aarch64
 
 ```bash
-./bin/omarchy-iso-make --arch aarch64 --edge --local-source ../omarchy-installer ../omarchy-pkgs
+./bin/collie-iso-make --arch aarch64 --edge --local-source ../omarchy-installer ../omarchy-pkgs
 ```
 
-One aarch64 image serves every board that installs from a USB stick. Apple Silicon Macs are not among them, since they are installed from macOS. The build chooses nothing. The installer asks the machine which platform it is on, with the runtime's own `omarchy-hw-platform`, and installs that platform's packages from the offline mirror, which carries them for every platform.
+One aarch64 image serves every board that installs from a USB stick. Apple Silicon Macs are not among them, since they are installed from macOS. The build chooses nothing. The installer asks the machine which platform it is on, with the runtime's own `collie-hw-platform`, and installs that platform's packages from the offline mirror, which carries them for every platform.
 
-An aarch64 image is built from the stable channel unless `--rc` or `--edge` names another, as on x86_64: Omarchy's aarch64 repository for that channel and its mirror of Arch Linux ARM (`arm-stable-mirror.omarchy.org`, `arm-rc-mirror.omarchy.org`, `arm-mirror.omarchy.org`), from `configs/pacman-online-aarch64-<channel>.conf`.
+An aarch64 image is built from the stable channel unless `--rc` or `--edge` names another, as on x86_64: Collie's aarch64 repository for that channel and its mirror of Arch Linux ARM (`arm-stable-mirror.omarchy.org`, `arm-rc-mirror.omarchy.org`, `arm-mirror.omarchy.org`), from `configs/pacman-online-aarch64-<channel>.conf`.
 
 The kernel is `linux-omarchy`, as on x86_64, and it is the only one an aarch64 image is built on. It comes from the channel's aarch64 repository. A package bundle (`--package-dir`) can put a kernel under test or pinned packages ahead of it, as [N1X.md](N1X.md) describes.
 
@@ -256,28 +256,28 @@ The runtime the image installs must have the platform detector and the Snapdrago
 
 ## Testing the ISO
 
-Run `./bin/omarchy-iso-boot [release/omarchy.iso]`.
+Run `./bin/collie-iso-boot [release/collie.iso]`.
 
 Run `./test/all` for the fast, VM-free tests under `test/unit/`, which cover cidata autoinstall loading and the orchestrator's phases without needing a built ISO.
 
 To exercise installation alongside existing Windows-style partitions, run
-`./bin/omarchy-iso-test-windows-disk [release/omarchy.iso]`. It creates a
+`./bin/collie-iso-test-windows-disk [release/collie.iso]`. It creates a
 synthetic disk in `/tmp` with an existing ESP and data partition plus ample
 unallocated space, then offers to start an interactive installation on it. The
 fixture exercises Windows partition preservation but does not contain Windows.
 
 ## Acceptance testing the ISO
 
-Run `./bin/omarchy-iso-test [release/omarchy.iso]` to install the ISO into a headless VM by driving the real interactive install flow — the harness reads each screen via QMP screendumps + OCR and answers with virtual keystrokes, so the configurator wizard, install dashboard, reboot prompt, and SDDM login are all exercised exactly as a user would. It then boots the installed system, sends real VM keyboard shortcuts for the primary shell and window-management actions, and runs the in-guest acceptance suite (`test/acceptance` in the omarchy repo). The suite checks session and service health, the complete core-package manifest, user defaults, representative applications, menus, panels, live weather, launchers, visual selectors, notifications, clipboard, and other interactive shell behavior.
+Run `./bin/collie-iso-test [release/collie.iso]` to install the ISO into a headless VM by driving the real interactive install flow — the harness reads each screen via QMP screendumps + OCR and answers with virtual keystrokes, so the configurator wizard, install dashboard, reboot prompt, and SDDM login are all exercised exactly as a user would. It then boots the installed system, sends real VM keyboard shortcuts for the primary shell and window-management actions, and runs the in-guest acceptance suite (`test/acceptance` in the omarchy repo). The suite checks session and service health, the complete core-package manifest, user defaults, representative applications, menus, panels, live weather, launchers, visual selectors, notifications, clipboard, and other interactive shell behavior.
 
 Visual checkpoints are saved as `success-<step>.png` or `failure-<step>.png` alongside the serial and install logs in `test-runs/<iso>/runs/<timestamp>/`. Independent test files and applications continue after a failure so one broken surface does not hide the rest of the report. The harness then stops the VM and opens the ordered screenshots in `imv` for quick visual review.
 
-The harness syncs the acceptance suite from `$OMARCHY_PATH` when it is available. The install phase produces a reusable base image, so iterating against another checkout is fast:
+The harness syncs the acceptance suite from `$COLLIE_PATH` when it is available. The install phase produces a reusable base image, so iterating against another checkout is fast:
 
 ```bash
-./bin/omarchy-iso-test release/omarchy.iso --install-only        # once per ISO
-./bin/omarchy-iso-test release/omarchy.iso --reuse-base \
-  --sync-omarchy ../omarchy                                      # fast loop against local tests
+./bin/collie-iso-test release/collie.iso --install-only        # once per ISO
+./bin/collie-iso-test release/collie.iso --reuse-base \
+  --sync-collie ../collie                                      # fast loop against local tests
 ```
 
 Pass `--encrypt` to drive the encrypted install flow (including typing the LUKS passphrase at boot) instead of the unencrypted one. Pass `--no-preview` to collect the same visual artifacts without opening them in `imv` when the run finishes.
@@ -287,24 +287,24 @@ Pass `--encrypt` to drive the encrypted install flow (including typing the LUKS 
 Scenarios under `test/integration.d/` boot a real ISO install in QEMU and assert on what the running system actually does. The runner installs the ISO once — unattended, from a generated cidata drive — and saves the result as a reusable base image; every scenario then boots a throwaway overlay of that base with its own copy of the firmware vars, so neither disk nor NVRAM state leaks between runs. Shared machinery (VM lifecycle, QMP screendump + OCR console driving, virtual keystrokes, guest SSH, the cidata build) lives in `test/integration.d/base-test.sh`, so a new scenario is one file.
 
 ```bash
-./test/integration release/omarchy.iso                   # install once, run all scenarios
-./test/integration release/omarchy.iso --reuse-base      # fast loop against the saved base
-./test/integration release/omarchy.iso factory-reset     # a single named scenario
+./test/integration release/collie.iso                   # install once, run all scenarios
+./test/integration release/collie.iso --reuse-base      # fast loop against the saved base
+./test/integration release/collie.iso factory-reset     # a single named scenario
 ```
 
-The first scenario is `factory-reset`: it proves `omarchy-system-factory-reset` hands a machine on without destroying a shared ESP. The installed ESP gets a Windows entry with payload plus a second Linux cloned under a foreign machine-id with its own boot directory and UKIs; a real factory reset is then driven through a guest pty, and the harness asserts the foreign entries survive both the staged reset and first-boot provisioning, that the old Omarchy identity is fully retired, and that the machine reaches first-boot setup unattended.
+The first scenario is `factory-reset`: it proves `collie-system-factory-reset` hands a machine on without destroying a shared ESP. The installed ESP gets a Windows entry with payload plus a second Linux cloned under a foreign machine-id with its own boot directory and UKIs; a real factory reset is then driven through a guest pty, and the harness asserts the foreign entries survive both the staged reset and first-boot provisioning, that the old Collie identity is fully retired, and that the machine reaches first-boot setup unattended.
 
-`corrupt-image` proves a bad install medium is refused before the disk is touched. It copies the ISO and flips one byte a megabyte into the root image stream itself — addressed from the extent xorriso reports out of the ISO9660 directory records, so the damage lands in the shipped bytes and nowhere else — then autoinstalls from that copy: `omarchy-root-image-verify.service` (which hashes the image at boot, while a user would be in the configurator) must fail, the install must halt in its pre-flight phase with the "re-flash" advice on screen, and the target disk must still have no partition table. It boots the ISO itself rather than the base image, so it also works standalone with `OMARCHY_INTEGRATION_ISO` set.
+`corrupt-image` proves a bad install medium is refused before the disk is touched. It copies the ISO and flips one byte a megabyte into the root image stream itself — addressed from the extent xorriso reports out of the ISO9660 directory records, so the damage lands in the shipped bytes and nowhere else — then autoinstalls from that copy: `collie-root-image-verify.service` (which hashes the image at boot, while a user would be in the configurator) must fail, the install must halt in its pre-flight phase with the "re-flash" advice on screen, and the target disk must still have no partition table. It boots the ISO itself rather than the base image, so it also works standalone with `COLLIE_INTEGRATION_ISO` set.
 
 Artifacts — screenshots, the fixtured/staged/final `limine.conf`, the reset typescript, and the factory-reset log — land under `test-runs/<iso>-integration/runs/<timestamp>-<scenario>/`, and `--no-preview` skips the `imv` review just like the acceptance harness.
 
 ## Upgrade testing
 
-`test/upgrade-test` checks what an existing user gets. It takes an installed system, moves it to another channel with `omarchy-channel-set`, reboots it, and checks what came back: the update's exit status, skipped migrations, that the reboot comes back by itself into an installed kernel, failed units, the desktop, the user's wallpaper and the boot menu.
+`test/upgrade-test` checks what an existing user gets. It takes an installed system, moves it to another channel with `collie-channel-set`, reboots it, and checks what came back: the update's exit status, skipped migrations, that the reboot comes back by itself into an installed kernel, failed units, the desktop, the user's wallpaper and the boot menu.
 
 ```bash
-./test/integration release/omarchy.iso boot                                # installs once, leaves the installed disk
-./test/upgrade-test test-runs/omarchy-integration edge upgrade-evidence    # edge or rc
+./test/integration release/collie.iso boot                                # installs once, leaves the installed disk
+./test/upgrade-test test-runs/collie-integration edge upgrade-evidence    # edge or rc
 ```
 
 The evidence folder gets `report.md`, the update's output, and a picture of the desktop before and after.
@@ -321,22 +321,22 @@ It only runs when started. When the branch it ran on has a pull request, the res
 
 ## Signing the ISO
 
-Run `./bin/omarchy-iso-sign [release/omarchy.iso]`. The signing key is retrieved from the shared Omarchy vault with the 1Password CLI.
+Run `./bin/collie-iso-sign [release/collie.iso]`. The signing key is retrieved from the shared Collie vault with the 1Password CLI.
 
 ## Uploading the ISO
 
-Run `./bin/omarchy-iso-upload [release/omarchy.iso]`. This requires rclone configuration (`rclone config`). The `.sig` and `.sha256` sidecars go up with the ISO when they exist beside it.
+Run `./bin/collie-iso-upload [release/collie.iso]`. This requires rclone configuration (`rclone config`). The `.sig` and `.sha256` sidecars go up with the ISO when they exist beside it.
 
 ## Full release of the ISO
 
-Run `./bin/omarchy-iso-release VERSION` to create, test, sign, and upload the ISO in one flow. Add `--rc` to release an RC build instead.
+Run `./bin/collie-iso-release VERSION` to create, test, sign, and upload the ISO in one flow. Add `--rc` to release an RC build instead.
 
 ## LUKS calibration during live boot
 
-`omarchy-luks-calibrate.service` runs cryptsetup's 2000 ms Argon2id benchmark
+`collie-luks-calibrate.service` runs cryptsetup's 2000 ms Argon2id benchmark
 after the medium verifiers, while the wizard is open. It publishes only the
 iteration, memory and parallel costs in a root-only file under
-`/run/omarchy-luks-calibration/`; no password, volume key or header is cached.
+`/run/collie-luks-calibration/`; no password, volume key or header is cached.
 Both the free-space wizard and archinstall's full-disk format consume it.
 Each format still creates a fresh header, salt and volume key.
 

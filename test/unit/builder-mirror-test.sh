@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # The build container installs its own tools (archiso, base-devel, ...) with
-# pacman before it builds anything. Those must come from Omarchy's mirror for
+# pacman before it builds anything. Those must come from Collie's mirror for
 # the build's channel, as the ISO's packages do, not from whatever mirror the
 # container image came with: on x86_64 that was Arch's public mirror, and a
 # stall there failed ISO builds.
@@ -19,18 +19,18 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 eval "$(sed -n '/^channel_core_server() {$/,/^}$/p' "$builder")"
 declare -F channel_core_server >/dev/null || fail "the builder has no channel_core_server"
 
-# Every channel's online configuration, on both architectures, names an Omarchy
+# Every channel's online configuration, on both architectures, names an Collie
 # mirror for [core], and that is what the build container is given.
 for conf in "$ROOT"/configs/pacman-online-*.conf; do
-  server=$(channel_core_server "$conf") || fail "${conf##*/}: no Omarchy mirror for [core]"
+  server=$(channel_core_server "$conf") || fail "${conf##*/}: no Collie mirror for [core]"
   [[ $server == "Server = https://"*"mirror.omarchy.org/"* ]] || fail "${conf##*/}: [core] is $server"
 done
-echo "ok - every channel's [core] is an Omarchy mirror"
+echo "ok - every channel's [core] is an Collie mirror"
 
 # A configuration whose [core] is somebody else's mirror is refused.
 printf '[core]\nServer = https://fastly.mirror.pkgbuild.com/$repo/os/$arch\n' >"$work/foreign.conf"
 if channel_core_server "$work/foreign.conf" >/dev/null 2>&1; then fail "a foreign [core] mirror is accepted"; fi
-echo "ok - a [core] that is not an Omarchy mirror stops the build"
+echo "ok - a [core] that is not an Collie mirror stops the build"
 
 # On x86_64 the channel's mirror goes first in the container's mirrorlist and
 # the image's own mirrors stay after it, the fallback the online configuration
@@ -50,4 +50,4 @@ grep -qF 'fastly.mirror.pkgbuild.com' <<<"$servers" || fail "the image's own mir
 # And a foreign [core] stops it before pacman runs, not with an empty line.
 online_pacman_conf="$work/foreign.conf"
 if (eval "$step") 2>/dev/null; then fail "the x86_64 step carries on with a foreign [core] mirror"; fi
-echo "ok - the x86_64 build container prefers the channel's Omarchy mirror and keeps the rest as fallback"
+echo "ok - the x86_64 build container prefers the channel's Collie mirror and keeps the rest as fallback"

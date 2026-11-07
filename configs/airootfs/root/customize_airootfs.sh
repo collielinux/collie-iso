@@ -66,8 +66,8 @@ fi
 rm -rf /usr/share/doc /usr/share/man /usr/share/info /usr/share/gtk-doc /usr/share/gir-1.0 /usr/include
 find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en*' ! -name locale.alias -exec rm -rf {} +
 
-mirror=/var/cache/omarchy/mirror/offline
-shipped_list=/usr/share/omarchy-iso/offline-mirror.shipped
+mirror=/var/cache/collie/mirror/offline
+shipped_list=/usr/share/collie-iso/offline-mirror.shipped
 
 [[ -f $shipped_list && -d $mirror ]] || exit 0
 

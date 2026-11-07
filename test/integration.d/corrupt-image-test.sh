@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # A corrupt install medium is refused before the disk is touched. The root
-# image ships on the ISO with its sha256 beside it; omarchy-root-image-verify
+# image ships on the ISO with its sha256 beside it; collie-root-image-verify
 # checks it at boot and the installer's pre-flight phase takes that verdict.
 # Flip one byte inside the root image on a copy of the ISO (a badly
 # flashed stick's damage, for real), autoinstall from it, and assert: the
@@ -22,16 +22,16 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
 
 # The 7 GB copy can live somewhere other than the run directory: a CI host
 # that keeps run directories on a tmpfs sized for base images and overlays
-# points OMARCHY_INTEGRATION_SCRATCH_DIR at its disk (the copy is read once
+# points COLLIE_INTEGRATION_SCRATCH_DIR at its disk (the copy is read once
 # at boot and once by the hasher, so a ramdisk buys it nothing).
-CORRUPT_ISO="${OMARCHY_INTEGRATION_SCRATCH_DIR:-$BASE_DIR}/corrupt.iso"
+CORRUPT_ISO="${COLLIE_INTEGRATION_SCRATCH_DIR:-$BASE_DIR}/corrupt.iso"
 # The root image's file name, resolved from the ISO instead of assumed: with
 # a wrong hardcoded name this scenario would silently test nothing.
-IMAGE_PATH=$(xorriso -indev "$ISO" -find /arch/x86_64 -name 'omarchy-root.*.zst' 2>/dev/null |
+IMAGE_PATH=$(xorriso -indev "$ISO" -find /arch/x86_64 -name 'collie-root.*.zst' 2>/dev/null |
   tr -d "'" | sed 's|^/||' | head -n1)
-IMAGE_PATH=${IMAGE_PATH:-arch/x86_64/omarchy-root.img.zst}
-VERIFY_UNIT=omarchy-root-image-verify.service
-STATE=/run/omarchy-install/state.json
+IMAGE_PATH=${IMAGE_PATH:-arch/x86_64/collie-root.img.zst}
+VERIFY_UNIT=collie-root-image-verify.service
+STATE=/run/collie-install/state.json
 
 # ------------------------------------------------------------------ fixture
 
@@ -94,7 +94,7 @@ corrupt_iso() {
 # -------------------------------------------------------------------- phases
 
 install_from_corrupt_medium() {
-  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "omarchy-integration" -f "$SSH_KEY"
+  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "collie-integration" -f "$SSH_KEY"
   detect_packages
   build_cidata
 
@@ -116,7 +116,7 @@ install_from_corrupt_medium() {
 
   log "Waiting for the installer to stop"
   local waited=0
-  until ssh_live_root 'grep -q "installer child exited" /var/log/omarchy-install.log' 2>/dev/null; do
+  until ssh_live_root 'grep -q "installer child exited" /var/log/collie-install.log' 2>/dev/null; do
     if ! vm_running; then
       echo "VM exited while waiting for the installer" >&2
       return 1
@@ -131,7 +131,7 @@ install_from_corrupt_medium() {
   done
   sleep 2
   capture_console "success-installer-stopped"
-  ssh_live_root "cat /var/log/omarchy-install.log" >"$RUN_DIR/omarchy-install.log" 2>/dev/null || true
+  ssh_live_root "cat /var/log/collie-install.log" >"$RUN_DIR/collie-install.log" 2>/dev/null || true
   ssh_live_root "cat $STATE" >"$RUN_DIR/state.json" 2>/dev/null || true
   ssh_live_root "journalctl -b -u $VERIFY_UNIT -o short-precise --no-pager" >"$RUN_DIR/verify-unit.journal" 2>/dev/null || true
 }

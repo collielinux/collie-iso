@@ -8,7 +8,7 @@
 # invariant set once here, at build time, into a btrfs filesystem compressed at
 # a high zstd level (see IMAGE_COMPRESS below), shrink it, and pack the
 # filesystem image as independent 256 KiB zstd frames with a seek table
-# (omarchy-image-write pack). At install time omarchy-image-write decodes the
+# (collie-image-write pack). At install time collie-image-write decodes the
 # frames on every core and writes them straight onto the target partition;
 # the installer then gives the filesystem a fresh fsid and grows it to fill
 # the partition. The per-machine delta is a small pacstrap after.
@@ -21,12 +21,12 @@
 #   package...      Packages to pacstrap into the image.
 #
 # Environment:
-#   OMARCHY_IMAGE_LOCALDB_COPY  Directory to copy the image's pacman local db
+#   COLLIE_IMAGE_LOCALDB_COPY  Directory to copy the image's pacman local db
 #                               into, so the caller can resolve the per-machine
 #                               delta against what the image already holds.
-#   OMARCHY_IMAGE_SIZE          Sparse backing file size (default 24G). Only the
+#   COLLIE_IMAGE_SIZE          Sparse backing file size (default 24G). Only the
 #                               written extents cost anything.
-#   OMARCHY_IMAGE_SYNC_DBS      The build's online sync directory, whose indexes
+#   COLLIE_IMAGE_SYNC_DBS      The build's online sync directory, whose indexes
 #                               the image ships (ship-sync-databases.sh).
 #
 # Needs a privileged environment: loop devices and a btrfs mount.
@@ -68,7 +68,7 @@ fi
 IMAGE_COMPRESS="compress-force=zstd:15"
 # Name of the image's one subvolume. The installer renames it to @ after the
 # write (phases_impl.ROOT_IMAGE_SUBVOLUME).
-IMAGE_SUBVOLUME="omarchy-root"
+IMAGE_SUBVOLUME="collie-root"
 
 # Boot-image pacman hooks that must not run while the image is built: there is
 # no kernel in the image and no ESP to deploy to. pacstrap reads hooks from the
@@ -76,7 +76,7 @@ IMAGE_SUBVOLUME="omarchy-root"
 # the target root is not prepended), so mask them here, the same way the
 # orchestrator masks the live ISO's around its pacstrap. Keep in step with
 # DEFERRED_BOOT_HOOKS in
-# configs/airootfs/usr/share/omarchy-iso/orchestrator/phases_impl.py.
+# configs/airootfs/usr/share/collie-iso/orchestrator/phases_impl.py.
 deferred_boot_hooks=(
   60-mkinitcpio-remove.hook
   60-limine-mkinitcpio-remove-pre.hook
@@ -85,7 +85,7 @@ deferred_boot_hooks=(
   90-mkinitcpio-install.hook
 )
 
-work=$(mktemp -d /tmp/omarchy-root-image.XXXXXX)
+work=$(mktemp -d /tmp/collie-root-image.XXXXXX)
 backing="$work/image.btrfs"
 mnt="$work/mnt"
 loop=""
@@ -105,8 +105,8 @@ cleanup() {
   set +e
   for hook in "${masked_hooks[@]}"; do
     rm -f "/etc/pacman.d/hooks/$hook"
-    if [[ -e "/etc/pacman.d/hooks/$hook.omarchy-backup" ]]; then
-      mv -f "/etc/pacman.d/hooks/$hook.omarchy-backup" "/etc/pacman.d/hooks/$hook"
+    if [[ -e "/etc/pacman.d/hooks/$hook.collie-backup" ]]; then
+      mv -f "/etc/pacman.d/hooks/$hook.collie-backup" "/etc/pacman.d/hooks/$hook"
     fi
   done
   if mountpoint -q "$mnt" 2>/dev/null; then
@@ -137,14 +137,14 @@ for hook in "${deferred_boot_hooks[@]}"; do
     continue
   fi
   if [[ -e $path || -L $path ]]; then
-    mv -f "$path" "$path.omarchy-backup"
+    mv -f "$path" "$path.collie-backup"
   fi
   ln -s /dev/null "$path"
   masked_hooks+=("$hook")
 done
 
 echo "Building root image with ${#packages[@]} packages"
-truncate -s "${OMARCHY_IMAGE_SIZE:-24G}" "$backing"
+truncate -s "${COLLIE_IMAGE_SIZE:-24G}" "$backing"
 # Docker fills the container's /dev once, at start. A loop device the kernel
 # creates afterwards (loop-control hands one out on demand, loading the module
 # on a host that had none) exists on the host but has no node in here, so make
@@ -155,7 +155,7 @@ loop=$(losetup --find | awk '{ print $1 }')
 [[ $loop == /dev/loop[0-9]* ]] || { echo "ERROR: no free loop device: $loop" >&2; exit 1; }
 [[ -b $loop ]] || mknod "$loop" b 7 "${loop#/dev/loop}"
 losetup "$loop" "$backing"
-mkfs.btrfs -q -L omarchy-root-image "$loop"
+mkfs.btrfs -q -L collie-root-image "$loop"
 mkdir -p "$mnt"
 mount -o "$IMAGE_COMPRESS" "$loop" "$mnt"
 btrfs subvolume create "$mnt/$IMAGE_SUBVOLUME" >/dev/null
@@ -192,10 +192,10 @@ find "$root/var/log" -mindepth 1 ! -name pacman.log -delete
 # Nothing downloaded, nothing to keep; and no build-host resolv.conf.
 rm -rf "$root/var/cache/pacman/pkg"/* "$root/etc/resolv.conf"
 
-if [[ -n ${OMARCHY_IMAGE_LOCALDB_COPY:-} ]]; then
-  rm -rf "$OMARCHY_IMAGE_LOCALDB_COPY"
-  mkdir -p "$OMARCHY_IMAGE_LOCALDB_COPY"
-  cp -a "$root/var/lib/pacman/local" "$OMARCHY_IMAGE_LOCALDB_COPY/"
+if [[ -n ${COLLIE_IMAGE_LOCALDB_COPY:-} ]]; then
+  rm -rf "$COLLIE_IMAGE_LOCALDB_COPY"
+  mkdir -p "$COLLIE_IMAGE_LOCALDB_COPY"
+  cp -a "$root/var/lib/pacman/local" "$COLLIE_IMAGE_LOCALDB_COPY/"
 fi
 
 installed=$(find "$root/var/lib/pacman/local" -mindepth 1 -maxdepth 1 -type d | wc -l)
@@ -215,7 +215,7 @@ fi
 # (131 forks in a traced install, about 0.5 s). bash formats the same
 # timestamp itself. Same output, no fork; patched here until the runtime
 # package carries the change.
-logging_sh="$root/usr/share/omarchy/install/helpers/logging.sh"
+logging_sh="$root/usr/share/collie/install/helpers/logging.sh"
 if [[ -f $logging_sh ]] && grep -q "date '+%Y-%m-%d %H:%M:%S'" "$logging_sh"; then
   sed -i \
     -e 's/\$(date '"'"'+%Y-%m-%d %H:%M:%S'"'"')/$(printf "%(%Y-%m-%d %H:%M:%S)T" -1)/g' \
@@ -226,13 +226,13 @@ fi
 
 # Package names no repository offers any more: follow the known renames in the
 # image's install scripts, refuse to ship one that still asks for a dropped name.
-bash "$(dirname -- "${BASH_SOURCE[0]}")/follow-renamed-packages.sh" "$root/usr/share/omarchy/install" \
-  "${OMARCHY_RENAMED_PACKAGES:-}" "${OMARCHY_UNRESOLVED_PACKAGES:-}"
+bash "$(dirname -- "${BASH_SOURCE[0]}")/follow-renamed-packages.sh" "$root/usr/share/collie/install" \
+  "${COLLIE_RENAMED_PACKAGES:-}" "${COLLIE_UNRESOLVED_PACKAGES:-}"
 
 # The online repositories' indexes, so the installed system can install
 # software before its first update (see ship-sync-databases.sh).
-if [[ -n ${OMARCHY_IMAGE_SYNC_DBS:-} ]]; then
-  bash "$(dirname -- "${BASH_SOURCE[0]}")/ship-sync-databases.sh" "$root" "$OMARCHY_IMAGE_SYNC_DBS"
+if [[ -n ${COLLIE_IMAGE_SYNC_DBS:-} ]]; then
+  bash "$(dirname -- "${BASH_SOURCE[0]}")/ship-sync-databases.sh" "$root" "$COLLIE_IMAGE_SYNC_DBS"
 fi
 
 sync
@@ -245,9 +245,9 @@ sync
 # type GUID.
 #
 # /boot/EFI/Linux inside the image is shadowed by the ESP mount at install
-# time, so the UKI is kept in /var/lib/omarchy-iso, where nothing mounts over
+# time, so the UKI is kept in /var/lib/collie-iso, where nothing mounts over
 # it.
-mkdir -p "$root/etc/kernel" "$root/etc/mkinitcpio.d" "$root/var/lib/omarchy-iso"
+mkdir -p "$root/etc/kernel" "$root/etc/mkinitcpio.d" "$root/var/lib/collie-iso"
 # systemd.tty.term.console=dumb: see CONSOLE_NO_ANSI_QUERY in the orchestrator
 # (systemd's console size query hangs 1 boot in 10 with Plymouth on the VT).
 # This embedded cmdline is what boots under Secure Boot, where Limine's entry
@@ -267,12 +267,12 @@ else
   # the default, stock linux before. The installer names the UKI
   # and its Limine entry after it.
   image_kernel=$(<"$root/usr/lib/modules/${image_kver}/pkgbase")
-  echo "$image_kernel" >"$root/var/lib/omarchy-iso/prebuilt-uki.kernel"
+  echo "$image_kernel" >"$root/var/lib/collie-iso/prebuilt-uki.kernel"
   # The early-loading modules configured when this UKI is built. A machine whose
   # hardware scripts add to them (nvidia.sh, fix-t2.sh) builds its own UKI.
   { grep -hE '^\s*MODULES\s*\+?=' "$root"/etc/mkinitcpio.conf.d/*.conf 2>/dev/null || true; } |
-    sed -E 's/\s+/ /g; s/^ //; s/ $//' | sort -u >"$root/var/lib/omarchy-iso/prebuilt-uki.modules"
-  # The console keymap this UKI is built with. omarchy_hooks.conf runs the
+    sed -E 's/\s+/ /g; s/^ //; s/ $//' | sort -u >"$root/var/lib/collie-iso/prebuilt-uki.modules"
+  # The console keymap this UKI is built with. collie_hooks.conf runs the
   # `keymap` hook, which compiles the keymap named by /etc/vconsole.conf into
   # the initramfs at build time, and bundles vconsole.conf itself for Plymouth.
   # Both are fixed here, at image build, to whatever this image has: in
@@ -284,19 +284,19 @@ else
   #
   # The LUKS passphrase prompt runs from this initramfs, so a stale `us` makes
   # a passphrase enrolled under another layout untypeable and locks the owner
-  # out of a fresh install (upstream omarchy#8196).
+  # out of a fresh install (upstream collie#8196).
   ( [ -f "$root/etc/vconsole.conf" ] && . "$root/etc/vconsole.conf"; printf '%s\n' "${KEYMAP:-}" ) \
-    >"$root/var/lib/omarchy-iso/prebuilt-uki.keymap"
+    >"$root/var/lib/collie-iso/prebuilt-uki.keymap"
   cat >"$root/etc/mkinitcpio.d/${image_kernel}.preset" <<PRESET
 ALL_config="/etc/mkinitcpio.conf"
 ALL_kver="/usr/lib/modules/${image_kver}/vmlinuz"
 PRESETS=('default')
-default_uki="/var/lib/omarchy-iso/prebuilt-uki.efi"
+default_uki="/var/lib/collie-iso/prebuilt-uki.efi"
 default_options="-S autodetect"
 PRESET
 
   # The pre-built UKI's own config. Naming a config with -c makes mkinitcpio
-  # skip /etc/mkinitcpio.conf.d, which is where omarchy_hooks.conf sets the
+  # skip /etc/mkinitcpio.conf.d, which is where collie_hooks.conf sets the
   # busybox hook list (udev ... encrypt): that list needs cryptdevice= and
   # root= on the cmdline, which a build-time UKI cannot know. The systemd
   # hook set needs neither: systemd-gpt-auto-generator finds the root
@@ -324,7 +324,7 @@ root=/sysroot
 case $(findmnt -no SOURCE "$root" 2>/dev/null) in */snapshot*) ;; *) exit 0 ;; esac
 [[ $(btrfs property get -t subvol "$root" ro 2>/dev/null) == "ro=true" ]] || exit 0
 echo "[snapshot-overlay] $root is a read-only btrfs snapshot; mounting an overlay"
-ram=/run/omarchy-snapshot-overlay
+ram=/run/collie-snapshot-overlay
 mkdir -p "$ram" && mount -t tmpfs cowspace "$ram" && mkdir -p "$ram/upper" "$ram/work" || exit 0
 mount -t overlay overlay -o "lowerdir=$root,upperdir=$ram/upper,workdir=$ram/work" "$root"   && echo "[snapshot-overlay] overlay mounted on $root"
 exit 0
@@ -341,9 +341,9 @@ build() {
     add_binary mkdir
     add_binary bash
     # add_systemd_unit also pulls in the unit's ExecStart binary.
-    add_systemd_unit omarchy-snapshot-overlay.service
-    add_symlink /usr/lib/systemd/system/initrd-root-fs.target.wants/omarchy-snapshot-overlay.service \
-        ../omarchy-snapshot-overlay.service
+    add_systemd_unit collie-snapshot-overlay.service
+    add_symlink /usr/lib/systemd/system/initrd-root-fs.target.wants/collie-snapshot-overlay.service \
+        ../collie-snapshot-overlay.service
 }
 help() {
     cat <<HELPEOF
@@ -354,7 +354,7 @@ HELPEOF
 INSTALL
   chmod 0755 "$root/usr/lib/initcpio/install/sd-btrfs-overlayfs"
   install -d "$root/usr/lib/systemd/system"
-  cat >"$root/usr/lib/systemd/system/omarchy-snapshot-overlay.service" <<'UNIT'
+  cat >"$root/usr/lib/systemd/system/collie-snapshot-overlay.service" <<'UNIT'
 [Unit]
 Description=Overlay for a read-only btrfs snapshot root (initrd)
 DefaultDependencies=no
@@ -389,7 +389,7 @@ CONF
   # 1800 bytes, under the kernel's 2048. A dotted name is a module parameter
   # to the kernel, so until it is overwritten it is ignored without a warning.
   prebuilt_cmdline=$(tr -s '\n ' ' ' <"$root/etc/kernel/cmdline")
-  prebuilt_cmdline="${prebuilt_cmdline% } omarchy.cmdline_room="
+  prebuilt_cmdline="${prebuilt_cmdline% } collie.cmdline_room="
   printf '%s%s\n' "$prebuilt_cmdline" "$(printf '%*s' $((1800 - ${#prebuilt_cmdline})) '' | tr ' ' 0)" \
     >"$root/etc/kernel/cmdline.prebuilt-uki"
 
@@ -400,18 +400,18 @@ CONF
        -k "/usr/lib/modules/${image_kver}/vmlinuz" \
        -c /etc/mkinitcpio-prebuilt-uki.conf \
        --cmdline /etc/kernel/cmdline.prebuilt-uki \
-       -U /var/lib/omarchy-iso/prebuilt-uki.efi \
+       -U /var/lib/collie-iso/prebuilt-uki.efi \
        -S autodetect 2>&1 | tail -25 ; then
-    if [[ -f "$root/var/lib/omarchy-iso/prebuilt-uki.efi" ]]; then
-      echo "Pre-built UKI: $(du -h "$root/var/lib/omarchy-iso/prebuilt-uki.efi" | cut -f1)"
-      prebuilt_uki_size_ok "$root/var/lib/omarchy-iso/prebuilt-uki.efi" || exit 1
+    if [[ -f "$root/var/lib/collie-iso/prebuilt-uki.efi" ]]; then
+      echo "Pre-built UKI: $(du -h "$root/var/lib/collie-iso/prebuilt-uki.efi" | cut -f1)"
+      prebuilt_uki_size_ok "$root/var/lib/collie-iso/prebuilt-uki.efi" || exit 1
     else
       echo "WARNING: mkinitcpio ran but left no UKI; the installer will build one"
     fi
   else
     echo "WARNING: mkinitcpio failed; the installer will build the UKI"
     # Clean up any partial output that would upset btrfs shrink downstream.
-    rm -f "$root/var/lib/omarchy-iso/prebuilt-uki.efi"
+    rm -f "$root/var/lib/collie-iso/prebuilt-uki.efi"
   fi
   # Only this build uses these; the installed system has no use for them.
   rm -f "$root/etc/mkinitcpio-prebuilt-uki.conf" "$root/etc/kernel/cmdline.prebuilt-uki"
@@ -436,7 +436,7 @@ echo "Shrinking image btrfs to ${shrink_mb}M (used $((used_bytes / 1048576))M + 
 # If the shrink fails, ship the image at its current size.
 if ! btrfs filesystem resize "${shrink_mb}M" "$mnt"; then
   echo "WARNING: btrfs shrink to ${shrink_mb}M failed; keeping the current size"
-  image_size=${OMARCHY_IMAGE_SIZE:-24G}
+  image_size=${COLLIE_IMAGE_SIZE:-24G}
   shrink_mb=$(( ${image_size%G} * 1024 ))
 fi
 # Free space inside the image still holds what the build and the shrink's
@@ -455,9 +455,9 @@ truncate -s "${shrink_mb}M" "$backing"
 # becomes 3.8 GB at zstd -3.
 #
 # As independent 256 KiB frames (level 3, a checksum each), which is what lets
-# omarchy-image-write decode and write it on every core at install time:
+# collie-image-write decode and write it on every core at install time:
 # 0.9 s instead of 2.5 s through zstdcat | dd on a 990 PRO. Framing costs
 # 1.3% (55 MB). It is still one valid .zst; zstd -d reads it unchanged.
 echo "Packing the root image as 256 KiB zstd frames"
-omarchy-image-write pack "$backing" "$output"
+collie-image-write pack "$backing" "$output"
 echo "Root image: $(du -h "$output" | cut -f1) at $output (from ${shrink_mb}M apparent input)"

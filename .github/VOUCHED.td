@@ -1,6 +1,6 @@
 # Trust list for our own runners.
 #
-# The install test runs on Omarchy's Namespace runners only for an author we
+# The install test runs on Collie's Namespace runners only for an author we
 # trust: repository collaborators with write access are trusted automatically
 # and do not need listing; external contributors listed here are trusted too.
 # Of the bots, only Dependabot and GitHub Actions are (the workflow names them).

@@ -9,7 +9,7 @@ fake can stand in for firmware that refuses a create, has no room left in
 NVRAM, or answers a create of an existing option with that option.
 A fake lsblk answers the ESP's partition GUID.
 
-The case that matters: a free-space install next to an existing Omarchy must
+The case that matters: a free-space install next to an existing Collie must
 not delete the other install's "Limine" entry, nor take the first "Limine"
 entry in the list as its own. And a reinstall onto the same ESP keeps the
 entry that already boots it: nothing is deleted to make way for a new one.
@@ -25,7 +25,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"))
 
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter", types.ModuleType("orchestrator.archinstall_adapter")
@@ -495,7 +495,7 @@ class RegisterLimineEfiEntryTest(unittest.TestCase):
         self.nvram_with({}, [])
         ctx = types.SimpleNamespace(
             is_protected=True,
-            omarchy_install={"boot": {"enable_fallback": True}, "storage": {"esp_device": "/dev/nvme1n1p3"}},
+            collie_install={"boot": {"enable_fallback": True}, "storage": {"esp_device": "/dev/nvme1n1p3"}},
         )
         warnings = []
         with mock.patch.dict(os.environ, {"FAKE_NO_EFIVARS": "1"}), \

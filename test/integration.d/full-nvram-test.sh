@@ -43,12 +43,12 @@ write() {
 }
 n=0
 for size in 8000 2000 500 100; do
-  while write "$(printf 'OmarchyFill%04d' "$n")" "$size"; do
+  while write "$(printf 'CollieFill%04d' "$n")" "$size"; do
     n=$((n + 1))
   done
 done
 # Only running out of space counts: a read-only efivarfs refuses every write too.
-if ((n > 0)) && ! write OmarchyFill9999 100 && grep -q "No space left on device" /tmp/err; then
+if ((n > 0)) && ! write CollieFill9999 100 && grep -q "No space left on device" /tmp/err; then
   state=full
 else
   state="not full ($(cat /tmp/err))"
@@ -104,10 +104,10 @@ if ! wait_for_unattended_install install "$RUN_DIR/install-serial.log"; then
   exit 1
 fi
 
-ssh_sudo "cat /var/log/omarchy-install.log" >"$RUN_DIR/omarchy-install.log" 2>/dev/null || true
+ssh_sudo "cat /var/log/collie-install.log" >"$RUN_DIR/collie-install.log" 2>/dev/null || true
 ssh_sudo "efibootmgr" >"$RUN_DIR/efibootmgr.txt" 2>/dev/null || true
 
-check "the installer was refused a boot entry" grep -q "would not register a 'Limine' UEFI boot entry" "$RUN_DIR/omarchy-install.log"
+check "the installer was refused a boot entry" grep -q "would not register a 'Limine' UEFI boot entry" "$RUN_DIR/collie-install.log"
 check "efibootmgr answered" grep -q "^BootOrder" "$RUN_DIR/efibootmgr.txt"
 check "no Limine entry is in NVRAM" bash -c '! grep -q "Limine" "$1"' _ "$RUN_DIR/efibootmgr.txt"
 check "the fallback loader is installed" ssh_sudo "test -s /boot/EFI/BOOT/BOOTX64.EFI"

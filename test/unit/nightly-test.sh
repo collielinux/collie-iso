@@ -4,7 +4,7 @@
 # and where they go (test/vm-image/nightly-plan), what it lays out and what
 # latest.json then says (test/vm-image/nightly-layout), how it checks what the
 # CDN serves (test/vm-image/nightly-check-cdn), and two things the install test
-# decides from what it is given: which Omarchy packages an ISO installs, and
+# decides from what it is given: which Collie packages an ISO installs, and
 # when an install is over.
 
 set -euo pipefail
@@ -71,37 +71,37 @@ export SITE=https://nightly.example ISO_SITE=https://iso.example ISO_COMMIT=0123
 # Edge. pacman answers for omarchy and omarchy-dev with the one installed
 # package, so its line is there twice.
 mkdir -p "$tmp/release"
-echo "an edge iso" >"$tmp/release/omarchy-2026.10.09-x86_64-edge.iso"
+echo "an edge iso" >"$tmp/release/collie-2026.10.09-x86_64-edge.iso"
 sealed "$tmp/sealed-edge"
 printf '%s\n' "omarchy-dev 4.0.0.r6818.gc352b62-2" "omarchy-dev 4.0.0.r6818.gc352b62-2" \
   "/usr/lib/modules/7.2.8-5-omarchy-bore/pkgbase is owned by linux-omarchy-bore 7.2.8-5" "7.2.8-5-omarchy-bore" >"$tmp/edge-packages"
-"$layout" edge 2026.10.09.431 edge/2026.10.09.431 "$tmp/release/omarchy-2026.10.09-x86_64-edge.iso" \
+"$layout" edge 2026.10.09.431 edge/2026.10.09.431 "$tmp/release/collie-2026.10.09-x86_64-edge.iso" \
   "$tmp/sealed-edge" "$tmp/edge-packages" "$tmp/out" >/dev/null
 json=$tmp/out/edge/latest.json
 dir=$tmp/out/edge/2026.10.09.431
 field() { jq -r "$1" "$json"; }
 
 equal "edge: files published" "$(cd "$tmp/out" && find . -type f | sort | paste -sd' ')" \
-  "./edge/2026.10.09.431/omarchy-edge-2026.10.09.431.iso ./edge/2026.10.09.431/omarchy-edge-2026.10.09.431.iso.sha256 ./edge/2026.10.09.431/omarchy-edge-2026.10.09.431.qcow2 ./edge/2026.10.09.431/omarchy-edge-2026.10.09.431.qcow2.sha256 ./edge/2026.10.09.431/unpacked/SHA256SUMS ./edge/2026.10.09.431/unpacked/cmdline ./edge/2026.10.09.431/unpacked/initrd ./edge/2026.10.09.431/unpacked/vm-boot ./edge/2026.10.09.431/unpacked/vmlinuz ./edge/latest.json"
+  "./edge/2026.10.09.431/collie-edge-2026.10.09.431.iso ./edge/2026.10.09.431/collie-edge-2026.10.09.431.iso.sha256 ./edge/2026.10.09.431/collie-edge-2026.10.09.431.qcow2 ./edge/2026.10.09.431/collie-edge-2026.10.09.431.qcow2.sha256 ./edge/2026.10.09.431/unpacked/SHA256SUMS ./edge/2026.10.09.431/unpacked/cmdline ./edge/2026.10.09.431/unpacked/initrd ./edge/2026.10.09.431/unpacked/vm-boot ./edge/2026.10.09.431/unpacked/vmlinuz ./edge/latest.json"
 (cd "$dir" && sha256sum -c --quiet ./*.sha256) || fail "edge: a checksum file does not match the file it is for"
 equal "edge: the ISO and the image each have a checksum file" "$(cd "$dir" && ls ./*.sha256 | wc -l)" "2"
-equal "edge: the image is the sealed disk" "$(cat "$dir/omarchy-edge-2026.10.09.431.qcow2")" "base.qcow2 of sealed-edge"
+equal "edge: the image is the sealed disk" "$(cat "$dir/collie-edge-2026.10.09.431.qcow2")" "base.qcow2 of sealed-edge"
 (cd "$dir/unpacked" && sha256sum -c --quiet SHA256SUMS) || fail "edge: SHA256SUMS does not match the unpacked files"
 equal "edge: SHA256SUMS covers every file beside it" \
   "$(awk '{ print $2 }' "$dir/unpacked/SHA256SUMS" | sort | paste -sd' ')" "$(cd "$dir/unpacked" && ls | grep -v SHA256SUMS | sort | paste -sd' ')"
 cmp -s "$dir/unpacked/vm-boot" "$ROOT/test/vm-image/vm-boot" || fail "edge: the published vm-boot is not the repository's"
 equal "edge: version" "$(field .version)" "2026.10.09.431"
 equal "edge: channel" "$(field .channel)" "edge"
-equal "edge: url" "$(field .url)" "https://nightly.example/edge/2026.10.09.431/omarchy-edge-2026.10.09.431.iso"
-equal "edge: sha256 is the ISO's" "$(field .sha256)" "$(sha256sum "$dir/omarchy-edge-2026.10.09.431.iso" | cut -d' ' -f1)"
-equal "edge: size is the ISO's" "$(field .size)" "$(stat -c %s "$dir/omarchy-edge-2026.10.09.431.iso")"
+equal "edge: url" "$(field .url)" "https://nightly.example/edge/2026.10.09.431/collie-edge-2026.10.09.431.iso"
+equal "edge: sha256 is the ISO's" "$(field .sha256)" "$(sha256sum "$dir/collie-edge-2026.10.09.431.iso" | cut -d' ' -f1)"
+equal "edge: size is the ISO's" "$(field .size)" "$(stat -c %s "$dir/collie-edge-2026.10.09.431.iso")"
 equal "edge: iso_commit" "$(field .iso_commit)" "$ISO_COMMIT"
 equal "edge: omarchy_version, once" "$(field .omarchy_version)" "4.0.0.r6818.gc352b62-2"
-equal "edge: omarchy_commit" "$(field .omarchy_commit)" "c352b62"
+equal "edge: collie_commit" "$(field .collie_commit)" "c352b62"
 equal "edge: kernel" "$(field .kernel)" "7.2.8-5-omarchy-bore"
-equal "edge: image address" "$(field .vm.url)" "https://nightly.example/edge/2026.10.09.431/omarchy-edge-2026.10.09.431.qcow2"
-equal "edge: image checksum is the image's" "$(field .vm.sha256)" "$(sha256sum "$dir/omarchy-edge-2026.10.09.431.qcow2" | cut -d' ' -f1)"
-equal "edge: image size is the image's" "$(field .vm.size)" "$(stat -c %s "$dir/omarchy-edge-2026.10.09.431.qcow2")"
+equal "edge: image address" "$(field .vm.url)" "https://nightly.example/edge/2026.10.09.431/collie-edge-2026.10.09.431.qcow2"
+equal "edge: image checksum is the image's" "$(field .vm.sha256)" "$(sha256sum "$dir/collie-edge-2026.10.09.431.qcow2" | cut -d' ' -f1)"
+equal "edge: image size is the image's" "$(field .vm.size)" "$(stat -c %s "$dir/collie-edge-2026.10.09.431.qcow2")"
 equal "edge: the ISO and the image differ only in their ending" "$(field .url | sed 's/\.iso$//')" "$(field .vm.url | sed 's/\.qcow2$//')"
 equal "edge: unpacked folder" "$(field .vm.unpacked)" "https://nightly.example/edge/2026.10.09.431/unpacked/"
 equal "edge: every unpacked file listed is published" "$(field '.vm.unpacked_files[]' | sort | paste -sd' ')" "$(cd "$dir/unpacked" && ls | sort | paste -sd' ')"
@@ -113,68 +113,68 @@ equal "edge: the version read from the ISO's name" "${BASH_REMATCH[0]}" "2026.10
 
 # Stable: the image is published, the released ISO stays where it is.
 rm -rf "$tmp/out"
-echo "a released iso" >"$tmp/release/omarchy-4.0.4.iso"
+echo "a released iso" >"$tmp/release/collie-4.0.4.iso"
 sealed "$tmp/sealed-stable"
-printf '%s\n' "omarchy 4.0.4-1" "/usr/lib/modules/7.2.5-3-omarchy/pkgbase is owned by linux-omarchy 7.2.5-3" "7.2.5-3-omarchy" >"$tmp/stable-packages"
-"$layout" stable 4.0.4 stable/4.0.4/431 "$tmp/release/omarchy-4.0.4.iso" "$tmp/sealed-stable" "$tmp/stable-packages" "$tmp/out" >/dev/null
+printf '%s\n' "collie 4.0.4-1" "/usr/lib/modules/7.2.5-3-collie/pkgbase is owned by linux-omarchy 7.2.5-3" "7.2.5-3-collie" >"$tmp/stable-packages"
+"$layout" stable 4.0.4 stable/4.0.4/431 "$tmp/release/collie-4.0.4.iso" "$tmp/sealed-stable" "$tmp/stable-packages" "$tmp/out" >/dev/null
 json=$tmp/out/stable/latest.json
 equal "stable: no ISO is published" "$(find "$tmp/out" -name '*.iso*' | wc -l)" "0"
-[[ -f $tmp/release/omarchy-4.0.4.iso ]] || fail "stable: the released ISO was moved away"
-equal "stable: url is the release's" "$(field .url)" "https://iso.example/omarchy-4.0.4.iso"
-equal "stable: sha256 is the ISO's" "$(field .sha256)" "$(sha256sum "$tmp/release/omarchy-4.0.4.iso" | cut -d' ' -f1)"
+[[ -f $tmp/release/collie-4.0.4.iso ]] || fail "stable: the released ISO was moved away"
+equal "stable: url is the release's" "$(field .url)" "https://iso.example/collie-4.0.4.iso"
+equal "stable: sha256 is the ISO's" "$(field .sha256)" "$(sha256sum "$tmp/release/collie-4.0.4.iso" | cut -d' ' -f1)"
 equal "stable: version" "$(field .version)" "4.0.4"
 equal "stable: omarchy_version" "$(field .omarchy_version)" "4.0.4-1"
-equal "stable: a release names no commit" "$(field .omarchy_commit)" ""
-equal "stable: image address has the run number" "$(field .vm.url)" "https://nightly.example/stable/4.0.4/431/omarchy-4.0.4.qcow2"
+equal "stable: a release names no commit" "$(field .collie_commit)" ""
+equal "stable: image address has the run number" "$(field .vm.url)" "https://nightly.example/stable/4.0.4/431/collie-4.0.4.qcow2"
 equal "stable: unpacked folder" "$(field .vm.unpacked)" "https://nightly.example/stable/4.0.4/431/unpacked/"
-(cd "$tmp/out/stable/4.0.4/431" && sha256sum -c --quiet omarchy-4.0.4.qcow2.sha256) || fail "stable: the image's checksum file does not match it"
+(cd "$tmp/out/stable/4.0.4/431" && sha256sum -c --quiet collie-4.0.4.qcow2.sha256) || fail "stable: the image's checksum file does not match it"
 (cd "$tmp/out/stable/4.0.4/431/unpacked" && sha256sum -c --quiet SHA256SUMS) || fail "stable: SHA256SUMS does not match the unpacked files"
 
 # 4.5.0 is published with its architecture in the ISO's name. latest.json
 # points at that name, and the image keeps the version's.
 rm -rf "$tmp/out"
-echo "a released x86 iso" >"$tmp/release/omarchy-4.5.0-x86.iso"
+echo "a released x86 iso" >"$tmp/release/collie-4.5.0-x86.iso"
 sealed "$tmp/sealed-x86"
-"$layout" stable 4.5.0 stable/4.5.0/478 "$tmp/release/omarchy-4.5.0-x86.iso" "$tmp/sealed-x86" "$tmp/stable-packages" "$tmp/out" >/dev/null
-equal "stable: url is the x86 release's" "$(field .url)" "https://iso.example/omarchy-4.5.0-x86.iso"
-equal "stable: the image keeps the version's name" "$(field .vm.url)" "https://nightly.example/stable/4.5.0/478/omarchy-4.5.0.qcow2"
-echo "a released aarch64 iso" >"$tmp/release/omarchy-4.5.0-aarch64.iso"
+"$layout" stable 4.5.0 stable/4.5.0/478 "$tmp/release/collie-4.5.0-x86.iso" "$tmp/sealed-x86" "$tmp/stable-packages" "$tmp/out" >/dev/null
+equal "stable: url is the x86 release's" "$(field .url)" "https://iso.example/collie-4.5.0-x86.iso"
+equal "stable: the image keeps the version's name" "$(field .vm.url)" "https://nightly.example/stable/4.5.0/478/collie-4.5.0.qcow2"
+echo "a released aarch64 iso" >"$tmp/release/collie-4.5.0-aarch64.iso"
 sealed "$tmp/sealed-arch"
-refused "a released ISO of another architecture" "$layout" stable 4.5.0 stable/4.5.0/9 "$tmp/release/omarchy-4.5.0-aarch64.iso" "$tmp/sealed-arch" "$tmp/stable-packages" "$tmp/out7"
-grep -q 'omarchy-4.5.0-aarch64.iso' "$tmp/refused.err" || fail "a released ISO of another architecture was refused for another reason"
+refused "a released ISO of another architecture" "$layout" stable 4.5.0 stable/4.5.0/9 "$tmp/release/collie-4.5.0-aarch64.iso" "$tmp/sealed-arch" "$tmp/stable-packages" "$tmp/out7"
+grep -q 'collie-4.5.0-aarch64.iso' "$tmp/refused.err" || fail "a released ISO of another architecture was refused for another reason"
 
 # edge-aarch64: the ISO and latest.json, no image yet. The ARM install test
-# answers with the Omarchy package (twice, as pacman does) and the kernel.
+# answers with the Collie package (twice, as pacman does) and the kernel.
 rm -rf "$tmp/out"
-echo "an aarch64 iso" >"$tmp/release/omarchy-2026.10.09-aarch64-edge.iso"
-printf '%s\n' "omarchy-dev 4.0.0.r7026.g51bfd1d-1" "omarchy-dev 4.0.0.r7026.g51bfd1d-1" "7.2.8-11-omarchy" >"$tmp/arm-packages"
-"$layout" edge-aarch64 2026.10.09.431 edge-aarch64/2026.10.09.431 "$tmp/release/omarchy-2026.10.09-aarch64-edge.iso" \
+echo "an aarch64 iso" >"$tmp/release/collie-2026.10.09-aarch64-edge.iso"
+printf '%s\n' "omarchy-dev 4.0.0.r7026.g51bfd1d-1" "omarchy-dev 4.0.0.r7026.g51bfd1d-1" "7.2.8-11-collie" >"$tmp/arm-packages"
+"$layout" edge-aarch64 2026.10.09.431 edge-aarch64/2026.10.09.431 "$tmp/release/collie-2026.10.09-aarch64-edge.iso" \
   - "$tmp/arm-packages" "$tmp/out" >/dev/null
 json=$tmp/out/edge-aarch64/latest.json
 dir=$tmp/out/edge-aarch64/2026.10.09.431
 equal "edge-aarch64: files published" "$(cd "$tmp/out" && find . -type f | sort | paste -sd' ')" \
-  "./edge-aarch64/2026.10.09.431/omarchy-edge-2026.10.09.431-aarch64.iso ./edge-aarch64/2026.10.09.431/omarchy-edge-2026.10.09.431-aarch64.iso.sha256 ./edge-aarch64/latest.json"
+  "./edge-aarch64/2026.10.09.431/collie-edge-2026.10.09.431-aarch64.iso ./edge-aarch64/2026.10.09.431/collie-edge-2026.10.09.431-aarch64.iso.sha256 ./edge-aarch64/latest.json"
 (cd "$dir" && sha256sum -c --quiet ./*.sha256) || fail "edge-aarch64: the checksum file does not match the ISO"
-equal "edge-aarch64: url" "$(field .url)" "https://nightly.example/edge-aarch64/2026.10.09.431/omarchy-edge-2026.10.09.431-aarch64.iso"
+equal "edge-aarch64: url" "$(field .url)" "https://nightly.example/edge-aarch64/2026.10.09.431/collie-edge-2026.10.09.431-aarch64.iso"
 equal "edge-aarch64: arch" "$(field .arch)" "aarch64"
-equal "edge-aarch64: omarchy_commit" "$(field .omarchy_commit)" "51bfd1d"
-equal "edge-aarch64: kernel" "$(field .kernel)" "7.2.8-11-omarchy"
+equal "edge-aarch64: collie_commit" "$(field .collie_commit)" "51bfd1d"
+equal "edge-aarch64: kernel" "$(field .kernel)" "7.2.8-11-collie"
 equal "edge-aarch64: no image is described" "$(field 'has("vm")')" "false"
 [[ $(basename "$(field .url)") =~ [0-9]+(\.[0-9]+){2,} ]] || fail "edge-aarch64: the ISO's name carries no version"
 equal "edge-aarch64: the version read from the ISO's name" "${BASH_REMATCH[0]}" "2026.10.09.431"
-echo "another aarch64 iso" >"$tmp/release/omarchy-2026.10.09-aarch64-edge.iso"
+echo "another aarch64 iso" >"$tmp/release/collie-2026.10.09-aarch64-edge.iso"
 refused "an aarch64 lane given a sealed image" "$layout" edge-aarch64 2026.10.09.432 edge-aarch64/2026.10.09.432 \
-  "$tmp/release/omarchy-2026.10.09-aarch64-edge.iso" "$tmp/sealed-edge" "$tmp/arm-packages" "$tmp/out6"
+  "$tmp/release/collie-2026.10.09-aarch64-edge.iso" "$tmp/sealed-edge" "$tmp/arm-packages" "$tmp/out6"
 
 # Nothing half-made is described.
 sealed "$tmp/sealed-short"; rm "$tmp/sealed-short/initrd"
-refused "a sealed image without its initrd" "$layout" stable 4.0.4 stable/4.0.4/9 "$tmp/release/omarchy-4.0.4.iso" "$tmp/sealed-short" "$tmp/stable-packages" "$tmp/out2"
+refused "a sealed image without its initrd" "$layout" stable 4.0.4 stable/4.0.4/9 "$tmp/release/collie-4.0.4.iso" "$tmp/sealed-short" "$tmp/stable-packages" "$tmp/out2"
 sealed "$tmp/sealed-x"; : >"$tmp/no-packages"
-refused "an image that named no Omarchy package" "$layout" stable 4.0.4 stable/4.0.4/9 "$tmp/release/omarchy-4.0.4.iso" "$tmp/sealed-x" "$tmp/no-packages" "$tmp/out3"
+refused "an image that named no Collie package" "$layout" stable 4.0.4 stable/4.0.4/9 "$tmp/release/collie-4.0.4.iso" "$tmp/sealed-x" "$tmp/no-packages" "$tmp/out3"
 sealed "$tmp/sealed-y"
-refused "a released ISO under another version's name" "$layout" stable 4.0.5 stable/4.0.5/9 "$tmp/release/omarchy-4.0.4.iso" "$tmp/sealed-y" "$tmp/stable-packages" "$tmp/out4"
+refused "a released ISO under another version's name" "$layout" stable 4.0.5 stable/4.0.5/9 "$tmp/release/collie-4.0.4.iso" "$tmp/sealed-y" "$tmp/stable-packages" "$tmp/out4"
 sealed "$tmp/sealed-z"
-refused "a channel that does not exist" "$layout" rc 4.0.4 rc/4.0.4 "$tmp/release/omarchy-4.0.4.iso" "$tmp/sealed-z" "$tmp/stable-packages" "$tmp/out5"
+refused "a channel that does not exist" "$layout" rc 4.0.4 rc/4.0.4 "$tmp/release/collie-4.0.4.iso" "$tmp/sealed-z" "$tmp/stable-packages" "$tmp/out5"
 
 # --------------------------------------------------------------- nightly-fetch
 # The network is played by three stand-ins: gh lists the artifacts, curl gives
@@ -183,7 +183,7 @@ fetch="$ROOT/test/vm-image/nightly-fetch"
 bash -n "$fetch"
 if command -v zip >/dev/null && command -v unzip >/dev/null; then
   stubs=$tmp/stubs; mkdir -p "$stubs" "$tmp/payload/edge/1"
-  echo "an image" >"$tmp/payload/edge/1/omarchy-edge-1.qcow2"
+  echo "an image" >"$tmp/payload/edge/1/collie-edge-1.qcow2"
   echo '{"version": "1"}' >"$tmp/payload/edge/latest.json"
   (cd "$tmp/payload" && zip -qr "$tmp/artifact.zip" .)
   zip_size=$(stat -c %s "$tmp/artifact.zip")
@@ -211,7 +211,7 @@ STUB
 
   : >"$tmp/fetch.log"
   fetched "$fetch" omacom/omarchy-iso 7 nightly-edge-7 "$tmp/fetched" >/dev/null
-  equal "fetch: the files of the artifact" "$(cd "$tmp/fetched" && find . -type f | sort | paste -sd' ')" "./edge/1/omarchy-edge-1.qcow2 ./edge/latest.json"
+  equal "fetch: the files of the artifact" "$(cd "$tmp/fetched" && find . -type f | sort | paste -sd' ')" "./edge/1/collie-edge-1.qcow2 ./edge/latest.json"
   grep -q "/artifacts/12/zip" "$tmp/fetch.log" || fail "fetch: of two artifacts with one name, the newer was not the one fetched"
   equal "fetch: nothing left behind" "$(ls "$tmp" | grep -c 'nightly-fetch\.')" "0"
 
@@ -244,9 +244,9 @@ chmod +x "$tmp/iso-curl/curl"
 iso_name() { env PATH="$tmp/iso-curl:$PATH" ISO_LOG="$tmp/iso.log" ISO_STATUS="$1" "$named" "$2"; }
 
 : >"$tmp/iso.log"
-equal "iso name: a release published with its architecture" "$(iso_name 200 4.5.0)" "omarchy-4.5.0-x86.iso"
-equal "iso name: the -x86 name is the one asked for" "$(cat "$tmp/iso.log")" "https://iso.example/omarchy-4.5.0-x86.iso"
-equal "iso name: a release from before 4.5.0" "$(iso_name 404 4.0.6)" "omarchy-4.0.6.iso"
+equal "iso name: a release published with its architecture" "$(iso_name 200 4.5.0)" "collie-4.5.0-x86.iso"
+equal "iso name: the -x86 name is the one asked for" "$(cat "$tmp/iso.log")" "https://iso.example/collie-4.5.0-x86.iso"
+equal "iso name: a release from before 4.5.0" "$(iso_name 404 4.0.6)" "collie-4.0.6.iso"
 refused "iso name: another answer than 200 or 404" iso_name 503 4.5.0
 grep -q 'answered 503' "$tmp/refused.err" || fail "iso name: the answer was not named"
 refused "iso name: a network error" iso_name down 4.5.0
@@ -341,13 +341,13 @@ eval "$(sed -n '/^detect_packages() {$/,/^}$/p; /^installed_system_started() {$/
 declare -F detect_packages installed_system_started >/dev/null || fail "the harness no longer has detect_packages and installed_system_started"
 
 packages_of() { ISO=$1; detect_packages; echo "$RUNTIME_PACKAGE $SETTINGS_PACKAGE"; }
-equal "an edge ISO installs the -dev packages" "$(packages_of release/omarchy-2026.10.09-x86_64-edge.iso)" "omarchy-dev omarchy-settings-dev"
-equal "a dev ISO installs the -dev packages" "$(packages_of release/omarchy-2026.10.09-x86_64-dev.iso)" "omarchy-dev omarchy-settings-dev"
-equal "a released ISO installs the release packages" "$(packages_of release/omarchy-4.0.4.iso)" "omarchy omarchy-settings"
-equal "a stable build installs the release packages" "$(packages_of /x/edge/omarchy-2026.10.09-x86_64-stable.iso)" "omarchy omarchy-settings"
-equal "an aarch64 rc ISO installs the release packages" "$(packages_of release/omarchy-2026.10.20-aarch64-rc.iso)" "omarchy omarchy-settings"
-equal "an aarch64 ISO with the debug key installs its channel's packages" "$(packages_of release/omarchy-2026.10.20-aarch64-devssh-quattro.iso)" "omarchy omarchy-settings"
-equal "an edge aarch64 ISO with the debug key installs the -dev packages" "$(packages_of release/omarchy-2026.10.20-aarch64-devssh-edge.iso)" "omarchy-dev omarchy-settings-dev"
+equal "an edge ISO installs the -dev packages" "$(packages_of release/collie-2026.10.09-x86_64-edge.iso)" "omarchy-dev omarchy-settings-dev"
+equal "a dev ISO installs the -dev packages" "$(packages_of release/collie-2026.10.09-x86_64-dev.iso)" "omarchy-dev omarchy-settings-dev"
+equal "a released ISO installs the release packages" "$(packages_of release/collie-4.0.4.iso)" "collie omarchy-settings"
+equal "a stable build installs the release packages" "$(packages_of /x/edge/collie-2026.10.09-x86_64-stable.iso)" "collie omarchy-settings"
+equal "an aarch64 rc ISO installs the release packages" "$(packages_of release/collie-2026.10.20-aarch64-rc.iso)" "collie omarchy-settings"
+equal "an aarch64 ISO with the debug key installs its channel's packages" "$(packages_of release/collie-2026.10.20-aarch64-devssh-quattro.iso)" "collie omarchy-settings"
+equal "an edge aarch64 ISO with the debug key installs the -dev packages" "$(packages_of release/collie-2026.10.20-aarch64-devssh-edge.iso)" "omarchy-dev omarchy-settings-dev"
 
 printf '%s\r\n' 'BdsDxe: loading Boot0002 "UEFI QEMU DVD-ROM QM00011 " from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x5,0xFFFF,0x0)' \
   'BdsDxe: starting Boot0002 "UEFI QEMU DVD-ROM QM00011 " from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x5,0xFFFF,0x0)' >"$tmp/serial"

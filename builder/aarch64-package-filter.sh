@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Adapt the x86_64-authored Omarchy package manifests to aarch64. The kernel
+# Adapt the x86_64-authored Collie package manifests to aarch64. The kernel
 # names are swapped for the platform kernel, and packages that only exist for
 # x86 are dropped with an explicit log line. The list is deliberately closed:
-# anything not named here that is missing from the bundle, Omarchy's edge
+# anything not named here that is missing from the bundle, Collie's edge
 # aarch64 repository or Arch Linux ARM still fails the build when pacman
 # cannot resolve it.
 filter_aarch64_packages() {

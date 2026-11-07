@@ -1,4 +1,4 @@
-"""Fresh installs use the Omarchy kernel, except for T2 Macs."""
+"""Fresh installs use the Collie kernel, except for T2 Macs."""
 
 import json
 import os
@@ -13,7 +13,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter",
     types.ModuleType("orchestrator.archinstall_adapter"),
@@ -69,7 +69,7 @@ class KernelSelectionTest(unittest.TestCase):
             ({}, "linux-t2", ["linux-t2"]),
             ({"kernels": ["linux-lts"]}, "linux-omarchy", ["linux-lts"]),
             ({"kernels": ["linux-omarchy", "linux-lts"]}, "linux-t2", ["linux-omarchy", "linux-lts"]),
-            ({"omarchy_install": {"storage": {"kernel": "linux-t2"}}}, "linux-omarchy", ["linux-t2"]),
+            ({"collie_install": {"storage": {"kernel": "linux-t2"}}}, "linux-omarchy", ["linux-t2"]),
         ]:
             with self.subTest(config=config, default=default), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
@@ -78,9 +78,9 @@ class KernelSelectionTest(unittest.TestCase):
                 config_path.write_text(json.dumps(config))
                 creds_path.write_text(json.dumps({"users": [{"username": "test"}]}))
                 with mock.patch.dict(os.environ, {
-                    "OMARCHY_INSTALL_CONFIG": str(config_path),
-                    "OMARCHY_INSTALL_CREDS": str(creds_path),
-                    "OMARCHY_INSTALL_STATE_DIR": str(root / "state"),
+                    "COLLIE_INSTALL_CONFIG": str(config_path),
+                    "COLLIE_INSTALL_CREDS": str(creds_path),
+                    "COLLIE_INSTALL_STATE_DIR": str(root / "state"),
                 }, clear=True), mock.patch.object(context, "_default_kernel", return_value=default):
                     ctx = context.InstallContext.from_env()
                 self.assertEqual(ctx.user_configuration["kernels"], expected)
@@ -115,7 +115,7 @@ class KernelSelectionTest(unittest.TestCase):
                     ctx = types.SimpleNamespace(
                         state={"arch_config_handler": types.SimpleNamespace(config=config), "mirror_handler": None},
                         target=Path("/unused"), tailscale_authkey_path=None, defer_provisioning=False,
-                        omarchy_install={},
+                        collie_install={},
                     )
                     # _start_target_keyring_init starts a real systemd-run unit
                     # on whatever machine runs the tests, left running
@@ -212,21 +212,21 @@ class KernelSelectionTest(unittest.TestCase):
                 files = {
                     f"usr/lib/modules/7.2-test/pkgbase": expected + "\n",
                     "usr/lib/modules/7.2-test/build/include/config/kernel.release": "7.2-test\n",
-                    "boot/limine.conf": "/Omarchy\n",
+                    "boot/limine.conf": "/Collie\n",
                     "etc/kernel/cmdline": "root=UUID=test\n",
-                    "etc/default/limine": "CUSTOM_UKI_NAME=omarchy\n",
+                    "etc/default/limine": "CUSTOM_UKI_NAME=collie\n",
                     "boot/EFI/limine/limine_x64.efi": "bootloader",
                     # A full-disk install deploys the fallback loader too;
                     # without it validate_boot warns that none is there.
                     "boot/EFI/BOOT/BOOTX64.EFI": "bootloader",
-                    f"boot/EFI/Linux/omarchy_{expected}.efi": "UKI",
+                    f"boot/EFI/Linux/collie_{expected}.efi": "UKI",
                 }
                 for name, content in files.items():
                     path = target / name
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text(content)
                 ctx = types.SimpleNamespace(
-                    target=target, omarchy_install={"storage": storage},
+                    target=target, collie_install={"storage": storage},
                     user_configuration=configuration, encrypt=False,
                     is_protected=False, defer_provisioning=False,
                 )
@@ -237,7 +237,7 @@ class KernelSelectionTest(unittest.TestCase):
                          "entries": {"0001": "Limine\tHD(1,GPT,test)/\\EFI\\limine\\limine_x64.efi"},
                      }):
                     phases_impl.validate_boot(ctx)
-                    (target / f"boot/EFI/Linux/omarchy_{expected}.efi").unlink()
+                    (target / f"boot/EFI/Linux/collie_{expected}.efi").unlink()
                     with self.assertRaisesRegex(RuntimeError, "missing or empty"):
                         phases_impl.validate_boot(ctx)
 
@@ -247,23 +247,23 @@ class KernelSelectionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp)
             files = {
-                "usr/lib/modules/7.2-omarchy/pkgbase": "linux-omarchy\n",
-                "usr/lib/modules/7.2-omarchy/build/include/config/kernel.release": "7.2-omarchy\n",
+                "usr/lib/modules/7.2-collie/pkgbase": "linux-omarchy\n",
+                "usr/lib/modules/7.2-collie/build/include/config/kernel.release": "7.2-collie\n",
                 "usr/lib/modules/7.2-t2/pkgbase": "linux-t2\n",
                 "usr/lib/modules/7.2-t2/build/include/config/kernel.release": "7.2-t2\n",
-                "boot/limine.conf": "/Omarchy\n",
+                "boot/limine.conf": "/Collie\n",
                 "etc/kernel/cmdline": "root=UUID=test\n",
-                "etc/default/limine": "CUSTOM_UKI_NAME=omarchy\n",
+                "etc/default/limine": "CUSTOM_UKI_NAME=collie\n",
                 "boot/EFI/limine/limine_x64.efi": "bootloader",
                 "boot/EFI/BOOT/BOOTX64.EFI": "bootloader",
-                "boot/EFI/Linux/omarchy_linux-omarchy.efi": "UKI",
+                "boot/EFI/Linux/collie_linux-collie.efi": "UKI",
             }
             for name, content in files.items():
                 path = target / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(content)
             ctx = types.SimpleNamespace(
-                target=target, omarchy_install={"storage": {"kernel": "linux-t2"}},
+                target=target, collie_install={"storage": {"kernel": "linux-t2"}},
                 user_configuration={}, encrypt=False,
                 is_protected=False, defer_provisioning=False,
             )
@@ -272,9 +272,9 @@ class KernelSelectionTest(unittest.TestCase):
                  mock.patch.object(phases_impl, "_read_efibootmgr", return_value={
                      "entries": {"0001": "Limine\tHD(1,GPT,test)"},
                  }):
-                with self.assertRaisesRegex(RuntimeError, "omarchy_linux-t2.efi missing or empty"):
+                with self.assertRaisesRegex(RuntimeError, "collie_linux-t2.efi missing or empty"):
                     phases_impl.validate_boot(ctx)
-                (target / "boot/EFI/Linux/omarchy_linux-t2.efi").write_text("UKI")
+                (target / "boot/EFI/Linux/collie_linux-t2.efi").write_text("UKI")
                 phases_impl.validate_boot(ctx)
 
 

@@ -1,8 +1,8 @@
 """Unit tests for the removable-media boot route on free-space installs.
 
-A free-space (protected) install puts Omarchy on a dedicated ESP that the
+A free-space (protected) install puts Collie on a dedicated ESP that the
 configurator creates, wipes and formats in free space. Nothing else on the
-disk uses that partition's EFI/BOOT/BOOTX64.EFI, so Omarchy claims it and
+disk uses that partition's EFI/BOOT/BOOTX64.EFI, so Collie claims it and
 keeps a boot route that survives firmware refusing or discarding the
 "Limine" NVRAM entry.
 
@@ -26,7 +26,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"))
 
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter", types.ModuleType("orchestrator.archinstall_adapter")
@@ -51,12 +51,12 @@ for _name, _attrs in _archinstall_names.items():
             setattr(_module, _attr, _value)
 
 from orchestrator import phases_impl  # noqa: E402
-from orchestrator.context import InstallContext, _default_omarchy_install  # noqa: E402
+from orchestrator.context import InstallContext, _default_collie_install  # noqa: E402
 
 LOADER = "\\EFI\\limine\\limine_x64.efi"
 
 
-def make_ctx(tmp: Path, omarchy_install: dict) -> InstallContext:
+def make_ctx(tmp: Path, collie_install: dict) -> InstallContext:
     return InstallContext(
         config_path=tmp / "user_configuration.json",
         creds_path=tmp / "user_credentials.json",
@@ -66,9 +66,9 @@ def make_ctx(tmp: Path, omarchy_install: dict) -> InstallContext:
         user_configuration={"disk_config": {"config_type": "pre_mounted_config"}},
         user_credentials={"users": [{"username": "test"}]},
         arch_config_path=tmp / "arch_configuration.json",
-        omarchy_install=omarchy_install,
+        collie_install=collie_install,
         target=tmp / "target",
-        omarchy_path=tmp / "omarchy",
+        collie_path=tmp / "collie",
     )
 
 
@@ -94,7 +94,7 @@ PROTECTED_INSTALL = {
 
 class BootIntentTest(unittest.TestCase):
     """The fallback is on for a free-space install, not only a full-disk one,
-    and off for a protected target nobody said Omarchy owns the ESP of."""
+    and off for a protected target nobody said Collie owns the ESP of."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -126,13 +126,13 @@ class BootIntentTest(unittest.TestCase):
         ctx = make_ctx(self.dir, install)
         self.assertFalse(phases_impl._boot_intent(ctx)["enable_fallback"])
 
-    def test_pre_mounted_config_without_omarchy_install_leaves_the_removable_path_alone(self):
-        default = _default_omarchy_install({"disk_config": {"config_type": "pre_mounted_config"}})
+    def test_pre_mounted_config_without_collie_install_leaves_the_removable_path_alone(self):
+        default = _default_collie_install({"disk_config": {"config_type": "pre_mounted_config"}})
         self.assertEqual(default["mode"], "protected")
         self.assertFalse(default["boot"]["enable_fallback"])
 
-    def test_full_disk_config_without_omarchy_install_enables_the_fallback(self):
-        default = _default_omarchy_install({"disk_config": {"config_type": "default_layout"}})
+    def test_full_disk_config_without_collie_install_enables_the_fallback(self):
+        default = _default_collie_install({"disk_config": {"config_type": "default_layout"}})
         self.assertEqual(default["mode"], "full_disk")
         self.assertTrue(default["boot"]["enable_fallback"])
 
@@ -145,7 +145,7 @@ class LimineDefaultsTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.dir = Path(self.tmp.name)
 
-        templates = self.dir / "omarchy" / "default" / "limine"
+        templates = self.dir / "collie" / "default" / "limine"
         templates.mkdir(parents=True)
         (templates / "default.conf").write_text(
             'ESP_PATH="/boot"\n\nKERNEL_CMDLINE[default]+="@@CMDLINE@@"\n'

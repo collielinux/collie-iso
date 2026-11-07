@@ -24,10 +24,10 @@ source "$work/fn.sh"
 
 archinstall_packages_file=$ROOT/builder/archinstall.packages
 build_cache_dir=$work/cache
-mkdir -p "$build_cache_dir/airootfs/usr/share/omarchy-iso"
-printf '%s\n' hyprland snapper >"$build_cache_dir/airootfs/usr/share/omarchy-iso/omarchy-base.packages"
+mkdir -p "$build_cache_dir/airootfs/usr/share/collie-iso"
+printf '%s\n' hyprland snapper >"$build_cache_dir/airootfs/usr/share/collie-iso/collie-base.packages"
 image_arch_packages=()
-OMARCHY_RUNTIME_PACKAGE=omarchy OMARCHY_SETTINGS_PACKAGE=omarchy-settings OMARCHY_NVIM_PACKAGE=omarchy-nvim
+COLLIE_RUNTIME_PACKAGE=omarchy COLLIE_SETTINGS_PACKAGE=omarchy-settings COLLIE_NVIM_PACKAGE=collie-nvim
 
 mapfile -t image < <(image_package_list)
 has() { printf '%s\n' "${image[@]}" | grep -qxF "$1"; }
@@ -45,7 +45,7 @@ for pkg in alsa-firmware sof-firmware tailscale; do
     fail=1
   fi
 done
-for pkg in amd-ucode intel-ucode linux-omarchy linux-omarchy-headers base linux-firmware hyprland omarchy; do
+for pkg in amd-ucode intel-ucode linux-omarchy linux-omarchy-headers base linux-firmware hyprland collie; do
   has "$pkg" || { echo "the image lacks $pkg, which every install gets"; fail=1; }
 done
 (( fail == 0 )) || exit 1

@@ -1,14 +1,14 @@
-# Commands that Omarchy's own scripts (bin/, install/, migrations/ in the
+# Commands that Collie's own scripts (bin/, install/, migrations/ in the
 # omarchy package) invoke and that must therefore exist on every installed
 # system. Most of them arrive as dependencies of something else, which is how
 # Ubuntu lost curl and xxd from its 26.04 minimal images: a package nobody
 # had listed vanished when the package that dragged it in was dropped. This
 # list is the contract; commands-test.sh checks it on the installed system.
 # Of 403 distinct commands in command position, the ones below are those
-# whose package is not named in any Omarchy package list.
+# whose package is not named in any Collie package list.
 # Not listed, on purpose: commands a script installs itself first
-# (fido2-token, after omarchy-pkg-add libfido2), guards with
-# omarchy-cmd-present (usbreset), or only names in a pattern (nano, nvme).
+# (fido2-token, after collie-pkg-add libfido2), guards with
+# collie-cmd-present (usbreset), or only names in a pattern (nano, nvme).
 awk
 blkid
 cmp

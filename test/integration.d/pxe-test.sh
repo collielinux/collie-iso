@@ -25,10 +25,10 @@
 #
 # Boots the ISO itself (over the wire), so it needs no base image.
 
-export OMARCHY_INTEGRATION_FIRMWARE=bios
+export COLLIE_INTEGRATION_FIRMWARE=bios
 
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
-# The TFTP root and NBD export come from the same rig bin/omarchy-iso-boot-pxe
+# The TFTP root and NBD export come from the same rig bin/collie-iso-boot-pxe
 # uses, so what this scenario proves is exactly what the hands-on tool boots.
 source "$ROOT/bin/lib/netboot.sh"
 
@@ -50,7 +50,7 @@ nbd_dialed() {
 # -------------------------------------------------------------------- phases
 
 netboot_into_installer() {
-  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "omarchy-integration" -f "$SSH_KEY"
+  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "collie-integration" -f "$SSH_KEY"
   detect_packages
   build_cidata
 
@@ -123,7 +123,7 @@ assert_nbd_medium() {
   check "kernel cmdline pinned copytoram=n" \
     ssh_live_root "grep -q 'copytoram=n' /proc/cmdline"
   check "root image is reachable on the netboot medium" \
-    ssh_live_root "test -f /run/archiso/bootmnt/arch/x86_64/omarchy-root.img.zst"
+    ssh_live_root "test -f /run/archiso/bootmnt/arch/x86_64/collie-root.img.zst"
 }
 
 assert_installed_system() {
@@ -132,7 +132,7 @@ assert_installed_system() {
   check "booted in legacy BIOS mode" \
     ssh_guest "test ! -d /sys/firmware/efi"
 
-  ssh_sudo "cat /var/log/omarchy-install.log" >"$RUN_DIR/omarchy-install.log" 2>/dev/null || true
+  ssh_sudo "cat /var/log/collie-install.log" >"$RUN_DIR/collie-install.log" 2>/dev/null || true
 }
 
 # ---------------------------------------------------------------------- main

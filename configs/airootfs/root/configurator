@@ -1,23 +1,23 @@
 #!/bin/bash
 
-# On the live ISO, .automated_script.sh exports OMARCHY_PATH and the package
-# targets before running us. The defaults keep bin/omarchy-iso-configurator
+# On the live ISO, .automated_script.sh exports COLLIE_PATH and the package
+# targets before running us. The defaults keep bin/collie-iso-configurator
 # dry runs working outside the ISO.
-OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
-OMARCHY_RUNTIME_PACKAGE="${OMARCHY_RUNTIME_PACKAGE:-omarchy}"
-OMARCHY_SETTINGS_PACKAGE="${OMARCHY_SETTINGS_PACKAGE:-omarchy-settings}"
+COLLIE_PATH="${COLLIE_PATH:-/usr/share/collie}"
+COLLIE_RUNTIME_PACKAGE="${COLLIE_RUNTIME_PACKAGE:-collie}"
+COLLIE_SETTINGS_PACKAGE="${COLLIE_SETTINGS_PACKAGE:-omarchy-settings}"
 
-LOGO_PATH="$OMARCHY_PATH/logo.txt"
+LOGO_PATH="$COLLIE_PATH/logo.txt"
 
 # The setup form — keyboard, timezone, account, and hostname questions, plus the
 # rules their answers are checked against — shared verbatim with the first-boot
 # owner setup that finishes a deferred install. build-iso.sh vendors it out of
 # the runtime package this ISO bundles, so the two can never offer different
 # layouts or accept different usernames. On the ISO that vendored copy is what
-# loads; a dry run outside the ISO falls back to the omarchy checkout
-# bin/omarchy-iso-configurator already points OMARCHY_PATH at.
-SETUP_FORM="${SETUP_FORM:-/usr/share/omarchy-iso/setup-form.sh}"
-[[ -r $SETUP_FORM ]] || SETUP_FORM="$OMARCHY_PATH/install/provisioning/setup-form.sh"
+# loads; a dry run outside the ISO falls back to the collie checkout
+# bin/collie-iso-configurator already points COLLIE_PATH at.
+SETUP_FORM="${SETUP_FORM:-/usr/share/collie-iso/setup-form.sh}"
+[[ -r $SETUP_FORM ]] || SETUP_FORM="$COLLIE_PATH/install/provisioning/setup-form.sh"
 if [[ ! -r $SETUP_FORM ]]; then
   echo "ERROR: shared setup form not found at $SETUP_FORM" >&2
   exit 1
@@ -26,9 +26,9 @@ source "$SETUP_FORM"
 
 # Partition creation helpers, shared with test/partition-numbering-test.sh so
 # the numbering logic can be exercised without a real disk.
-DISK_PARTITIONING="${DISK_PARTITIONING:-/usr/share/omarchy-iso/disk-partitioning.sh}"
+DISK_PARTITIONING="${DISK_PARTITIONING:-/usr/share/collie-iso/disk-partitioning.sh}"
 [[ -r $DISK_PARTITIONING ]] ||
-  DISK_PARTITIONING="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../usr/share/omarchy-iso/disk-partitioning.sh"
+  DISK_PARTITIONING="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../usr/share/collie-iso/disk-partitioning.sh"
 if [[ ! -r $DISK_PARTITIONING ]]; then
   echo "ERROR: disk partitioning helpers not found at $DISK_PARTITIONING" >&2
   exit 1
@@ -36,9 +36,9 @@ fi
 source "$DISK_PARTITIONING"
 
 # Installer strings in the language picked on the first screen; t <key> [args].
-INSTALLER_I18N="${INSTALLER_I18N:-/usr/share/omarchy-iso/i18n.sh}"
+INSTALLER_I18N="${INSTALLER_I18N:-/usr/share/collie-iso/i18n.sh}"
 [[ -r $INSTALLER_I18N ]] ||
-  INSTALLER_I18N="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../usr/share/omarchy-iso/i18n.sh"
+  INSTALLER_I18N="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../usr/share/collie-iso/i18n.sh"
 if [[ ! -r $INSTALLER_I18N ]]; then
   echo "ERROR: installer strings not found at $INSTALLER_I18N" >&2
   exit 1
@@ -108,7 +108,7 @@ clear_logo() {
 
 # Vertically-centered welcome shown once before the keyboard step — the same
 # frame the deferred-provisioning first boot opens on, so install and first boot
-# bookend the setup identically. Logo, the Omarchy tagline, and a single button,
+# bookend the setup identically. Logo, the Collie tagline, and a single button,
 # centered like the boot logo. No animation.
 greeter() {
   measure_terminal
@@ -214,11 +214,11 @@ notice() {
 
 # STEP 0: LANGUAGE
 #
-# Every Omarchy language is offered. One with a catalog here also switches the
+# Every Collie language is offered. One with a catalog here also switches the
 # installer; the rest, in scripts the console font cannot draw, are listed by
 # their English name and only set the installed system's language.
 
-LANGUAGES_JSON="${LANGUAGES_JSON:-$OMARCHY_PATH/default/i18n/locales.json}"
+LANGUAGES_JSON="${LANGUAGES_JSON:-$COLLIE_PATH/default/i18n/locales.json}"
 language="en"
 
 # The setup form takes its language and defaults from the language picked here:
@@ -226,19 +226,19 @@ language="en"
 # cannot guess a timezone. A language with no single country (English, Arabic,
 # Swahili, Tamil) falls back to UTC: with no fallback the form opens a search,
 # where Enter takes the first zone, Africa/Abidjan.
-LANGUAGE_DEFAULTS="${LANGUAGE_DEFAULTS:-$OMARCHY_ISO_SHARE/language-defaults.json}"
+LANGUAGE_DEFAULTS="${LANGUAGE_DEFAULTS:-$COLLIE_ISO_SHARE/language-defaults.json}"
 
 language_default() {
   jq -r --arg code "$language" --arg field "$1" '.[$code][$field] // empty' "$LANGUAGE_DEFAULTS" 2>/dev/null
 }
 
 set_form_language() {
-  OMARCHY_FORM_LANGUAGE=$language
-  OMARCHY_FORM_KEYBOARD_DEFAULT=$(language_default keyboard)
-  OMARCHY_FORM_KEYBOARD_DEFAULT=${OMARCHY_FORM_KEYBOARD_DEFAULT:-English (US)}
-  OMARCHY_FORM_TIMEZONE_FALLBACK=$(language_default timezone)
-  OMARCHY_FORM_TIMEZONE_FALLBACK=${OMARCHY_FORM_TIMEZONE_FALLBACK:-UTC}
-  export OMARCHY_FORM_LANGUAGE OMARCHY_FORM_KEYBOARD_DEFAULT OMARCHY_FORM_TIMEZONE_FALLBACK
+  COLLIE_FORM_LANGUAGE=$language
+  COLLIE_FORM_KEYBOARD_DEFAULT=$(language_default keyboard)
+  COLLIE_FORM_KEYBOARD_DEFAULT=${COLLIE_FORM_KEYBOARD_DEFAULT:-English (US)}
+  COLLIE_FORM_TIMEZONE_FALLBACK=$(language_default timezone)
+  COLLIE_FORM_TIMEZONE_FALLBACK=${COLLIE_FORM_TIMEZONE_FALLBACK:-UTC}
+  export COLLIE_FORM_LANGUAGE COLLIE_FORM_KEYBOARD_DEFAULT COLLIE_FORM_TIMEZONE_FALLBACK
 }
 
 language_label() {
@@ -250,7 +250,7 @@ language_label() {
 # "label<TAB>code" rows, English first and the rest alphabetical by what is shown.
 language_rows() {
   local translated
-  translated=$(cd "$OMARCHY_ISO_I18N_DIR" && printf '%s\n' *.json | sed 's/\.json$//' | jq -R . | jq -sc .)
+  translated=$(cd "$COLLIE_ISO_I18N_DIR" && printf '%s\n' *.json | sed 's/\.json$//' | jq -R . | jq -sc .)
   jq -r --argjson translated "$translated" '
     to_entries
     | map({code: .key, label: (if (.key | IN($translated[])) then .value.name else .value.englishName end)})
@@ -276,7 +276,7 @@ language_form() {
         --selected "$(language_label "$language")" --header "$(t language.header)") && status=0 || status=$?
       ((status == 0)) && [[ -n $choice ]] && break
 
-      if ((status == OMARCHY_FORM_SIGNAL)) && confirm_prepare_for_another_owner; then
+      if ((status == COLLIE_FORM_SIGNAL)) && confirm_prepare_for_another_owner; then
         defer_provisioning=true
         return 0
       fi
@@ -299,21 +299,21 @@ keyboard_form() {
     echo
     if ! i18n_translated "$language"; then
       # English on purpose: there is no catalog for this language to say it in.
-      say --foreground 8 "The installer stays in English. Omarchy will be in $(language_label "$language") once installed."
+      say --foreground 8 "The installer stays in English. Collie will be in $(language_label "$language") once installed."
     fi
     echo
 
-    omarchy_prompt_keyboard && status=0 || status=$?
+    collie_prompt_keyboard && status=0 || status=$?
     ((status == 0)) && break
 
     # Esc means "back", to the language picker, which can arm deferred provisioning.
-    if ((status == OMARCHY_FORM_BACK)); then
+    if ((status == COLLIE_FORM_BACK)); then
       language_form
       $defer_provisioning && return 0
       continue
     fi
 
-    ((status == OMARCHY_FORM_SIGNAL)) && continue
+    ((status == COLLIE_FORM_SIGNAL)) && continue
     abort
   done
 
@@ -343,17 +343,17 @@ confirm_prepare_for_another_owner() {
 user_form() {
   step "$(t user.intro)"
 
-  # Each prompt reports 0 (set), OMARCHY_FORM_BACK (Esc), or OMARCHY_FORM_SIGNAL
+  # Each prompt reports 0 (set), COLLIE_FORM_BACK (Esc), or COLLIE_FORM_SIGNAL
   # (Ctrl+C). Both non-zero cases unwind to user_step, which decides what they
   # mean here; the form itself never aborts.
-  omarchy_prompt_timezone || return $?
-  omarchy_prompt_username || return $?
-  omarchy_prompt_password || return $?
+  collie_prompt_timezone || return $?
+  collie_prompt_username || return $?
+  collie_prompt_password || return $?
 
   # Hash the password with SHA-512 crypt ($6$), which is what openssl passwd offers
   password_hash=$(printf '%s' "$password" | openssl passwd -6 -stdin)
 
-  omarchy_prompt_hostname || return $?
+  collie_prompt_hostname || return $?
 }
 
 # Returns 0 on confirmed account details, or as soon as the keyboard screen
@@ -367,7 +367,7 @@ user_step() {
       # Esc unwinds to the start of the form. Ctrl+C has no side channel in the
       # user step (only the keyboard and disk screens give it a meaning), so it
       # keeps its long-standing behaviour of ending the install.
-      ((status == OMARCHY_FORM_BACK)) || abort
+      ((status == COLLIE_FORM_BACK)) || abort
       keyboard_form
       $defer_provisioning && return 0
       continue
@@ -475,13 +475,13 @@ stage_qualcomm_firmware() {
   command -v qcom-firmware-extract >/dev/null 2>&1 || return 0
   [[ -d /sys/firmware/devicetree/base ]] || return 0
 
-  local stage=/run/omarchy/firmware
+  local stage=/run/collie/firmware
   local missing saved
   missing=$(qcom-firmware-extract --list-missing 2>/dev/null | grep -c . || true)
   ((missing > 0)) || return 0
 
   step "$(t firmware.title)"
-  qcom-firmware-extract --stage "$stage" >/run/omarchy/firmware-stage.log 2>&1 || true
+  qcom-firmware-extract --stage "$stage" >/run/collie/firmware-stage.log 2>&1 || true
   saved=$(grep -c . "$stage/manifest" 2>/dev/null || true)
   if ((saved >= missing)); then
     say "$(t firmware.saved "$saved")"
@@ -489,7 +489,7 @@ stage_qualcomm_firmware() {
     say "$(t firmware.partial "$saved" "$missing")"
   else
     say --foreground 1 "$(t firmware.none)"
-    if grep -q BitLocker /run/omarchy/firmware-stage.log 2>/dev/null; then
+    if grep -q BitLocker /run/collie/firmware-stage.log 2>/dev/null; then
       say "$(t firmware.bitlocker)"
       say "$(t firmware.bitlockerHint)"
     fi
@@ -507,12 +507,12 @@ detect_windows_esp() {
     tmp_mp=$(mktemp -d)
     if mount -t vfat -o ro "$p" "$tmp_mp" 2>/dev/null; then
       if [[ -d "$tmp_mp/EFI/Microsoft" ]]; then
-        umount "$tmp_mp" 2>>"${OMARCHY_INSTALL_LOG_FILE:-/dev/null}"
-        rmdir "$tmp_mp" 2>>"${OMARCHY_INSTALL_LOG_FILE:-/dev/null}"
+        umount "$tmp_mp" 2>>"${COLLIE_INSTALL_LOG_FILE:-/dev/null}"
+        rmdir "$tmp_mp" 2>>"${COLLIE_INSTALL_LOG_FILE:-/dev/null}"
         echo "$p"
         return 0
       fi
-      umount "$tmp_mp" 2>>"${OMARCHY_INSTALL_LOG_FILE:-/dev/null}"
+      umount "$tmp_mp" 2>>"${COLLIE_INSTALL_LOG_FILE:-/dev/null}"
     fi
     rmdir "$tmp_mp" 2>/dev/null || true
   done
@@ -525,8 +525,8 @@ to_gb() {
 
 # The ISO build records its architecture and, on aarch64, the kernel the image
 # boots and installs (see build-iso.sh). One aarch64 image serves every board.
-iso_arch=$(cat /root/omarchy_arch 2>/dev/null || uname -m)
-if [[ $iso_arch == aarch64 && ! -s /root/omarchy_kernel ]]; then
+iso_arch=$(cat /root/collie_arch 2>/dev/null || uname -m)
+if [[ $iso_arch == aarch64 && ! -s /root/collie_kernel ]]; then
   echo "Error: this aarch64 ISO does not record the kernel it was built with" >&2
   exit 1
 fi
@@ -534,7 +534,7 @@ fi
 # T2 Macs need their own kernel for keyboard/wifi drivers. aarch64 images are
 # built for one platform kernel (linux-omarchy today), recorded by the
 # build, and nothing else boots.
-iso_kernel=$(cat /root/omarchy_kernel 2>/dev/null || true)
+iso_kernel=$(cat /root/collie_kernel 2>/dev/null || true)
 detect_kernel() {
   if [[ $iso_arch == aarch64 ]]; then
     echo "$iso_kernel"
@@ -569,7 +569,7 @@ disk_abort_hook() {
   umount -R /mnt 2>/dev/null || true
   umount /mnt/btrfs-root 2>/dev/null || true
   rmdir /mnt/btrfs-root 2>/dev/null || true
-  cryptsetup close omarchy_root 2>/dev/null || true
+  cryptsetup close collie_root 2>/dev/null || true
   rollback_created_parts "$disk"
   abort "$1"
 }
@@ -631,7 +631,7 @@ print_dry_run_files() {
   rm -f user_configuration.json user_credentials.json user_encrypt_installation.txt
 }
 
-# Shared error screen for every "can't fit Omarchy here" outcome of the
+# Shared error screen for every "can't fit Collie here" outcome of the
 # partition install. Offers the partition tool as the meaningful second
 # action so users have a way to actually fix the situation.
 not_enough_space() {
@@ -665,12 +665,12 @@ run_partition_decide() {
     return 1
   fi
 
-  # Omarchy always creates its own dedicated ESP in free space and never
+  # Collie always creates its own dedicated ESP in free space and never
   # adopts an existing (Windows) ESP. Sharing the Windows ESP is fragile:
   # Windows Update/repair can reclaim or reformat it, the typical 100-260MiB
   # Windows ESP is far too small for our Unified Kernel Images, and a shared
   # ESP forces the install unencrypted. A separate Linux ESP keeps Windows
-  # and Omarchy fully isolated and keeps LUKS on the table.
+  # and Collie fully isolated and keeps LUKS on the table.
   step "$(t esp.checking "$disk")"
   local detected_win_esp
   detected_win_esp=$(detect_windows_esp || true)
@@ -729,7 +729,7 @@ run_partition_decide() {
   local mib=$((1024 * 1024)) gib=$((1024 * 1024 * 1024))
   local ALIGN=$mib
   local EFI_SIZE_B=$((2 * gib))
-  local MIN_INSTALL_B=$((32 * gib))    # Minimum total Omarchy allocation
+  local MIN_INSTALL_B=$((32 * gib))    # Minimum total Collie allocation
 
   EFI_START_B=$(( (FREE_START_B + ALIGN - 1) / ALIGN * ALIGN ))
   EFI_END_B=$((EFI_START_B + EFI_SIZE_B))
@@ -749,7 +749,7 @@ run_partition_decide() {
   fi
 
   # Default to encrypted and hide the unencrypted path behind Ctrl+C,
-  # matching the full-disk flow. The dedicated Omarchy ESP always supports
+  # matching the full-disk flow. The dedicated Collie ESP always supports
   # LUKS, so encryption is always on the table here.
   local mode="encrypted" affirmative confirm_status
 
@@ -810,7 +810,7 @@ run_partition_decide() {
   root_partition_device="<assigned at creation>"
   root_mapper="<assigned at creation>"
   if [[ "$encrypt_installation" == "true" ]]; then
-    root_mapper="/dev/mapper/omarchy_root"
+    root_mapper="/dev/mapper/collie_root"
   fi
 }
 
@@ -837,11 +837,11 @@ run_partition_execute() {
     # create_partition reports the number parted actually used; nothing here
     # may assume it. It sets created_partition_number rather than printing so
     # the rollback bookkeeping survives (a $(...) would subshell it away).
-    create_partition "$disk" "$EFI_START_B" "$EFI_END_B" fat32 OMARCHY_EFI ||
+    create_partition "$disk" "$EFI_START_B" "$EFI_END_B" fat32 COLLIE_EFI ||
       disk_abort_hook "Could not create the EFI partition on $disk"
     efi_part_num="$created_partition_number"
 
-    create_partition "$disk" "$ROOT_START_B" "$ROOT_END_B" btrfs OMARCHY_ROOT ||
+    create_partition "$disk" "$ROOT_START_B" "$ROOT_END_B" btrfs COLLIE_ROOT ||
       disk_abort_hook "Could not create the root partition on $disk"
     root_part_num="$created_partition_number"
 
@@ -853,7 +853,7 @@ run_partition_execute() {
 
     # Its warnings go to stderr, which reaches the tty unpadded; keep them in
     # the log.
-    partprobe "$disk" 2>>"${OMARCHY_INSTALL_LOG_FILE:-/dev/null}"
+    partprobe "$disk" 2>>"${COLLIE_INSTALL_LOG_FILE:-/dev/null}"
     sync
     sleep 2
 
@@ -877,11 +877,11 @@ run_partition_execute() {
       # free-space path formats and opens here, before the orchestrator runs,
       # so that tuning does not reach it.
       disk_step "Formatting LUKS2 on $root_partition_device" \
-        omarchy-luks-calibrate format "$root_partition_device" < <(printf "%s" "$password")
+        collie-luks-calibrate format "$root_partition_device" < <(printf "%s" "$password")
       disk_step "Opening the encrypted root on $root_partition_device" \
         cryptsetup open --persistent --allow-discards --perf-no_read_workqueue \
-          "$root_partition_device" omarchy_root - < <(printf "%s" "$password")
-      root_mapper="/dev/mapper/omarchy_root"
+          "$root_partition_device" collie_root - < <(printf "%s" "$password")
+      root_mapper="/dev/mapper/collie_root"
     else
       root_mapper="$root_partition_device"
     fi
@@ -894,7 +894,7 @@ run_partition_execute() {
     # installed system's fstrim.timer discards free space on its own; the
     # full-disk path does the same through archinstall (archinstall_adapter).
     disk_step "creating the Btrfs filesystem on $root_mapper" \
-      mkfs.btrfs -K -f -L OMARCHY "$root_mapper"
+      mkfs.btrfs -K -f -L COLLIE "$root_mapper"
     wait_for_device "$root_mapper" || disk_abort_hook "Root device $root_mapper never appeared"
 
     mkdir -p /mnt/btrfs-root
@@ -902,8 +902,8 @@ run_partition_execute() {
     for subvol in @ @home @log @pkg; do
       disk_step "creating subvolume $subvol" btrfs subvolume create "/mnt/btrfs-root/$subvol"
     done
-    umount /mnt/btrfs-root 2>>"${OMARCHY_INSTALL_LOG_FILE:-/dev/null}"
-    rmdir /mnt/btrfs-root 2>>"${OMARCHY_INSTALL_LOG_FILE:-/dev/null}"
+    umount /mnt/btrfs-root 2>>"${COLLIE_INSTALL_LOG_FILE:-/dev/null}"
+    rmdir /mnt/btrfs-root 2>>"${COLLIE_INSTALL_LOG_FILE:-/dev/null}"
 
     disk_step "mounting the target root" \
       mount -o noatime,compress=zstd,subvol=@ "$root_mapper" /mnt
@@ -915,7 +915,7 @@ run_partition_execute() {
     disk_step "mounting the package cache" \
       mount -o noatime,compress=zstd,subvol=@pkg "$root_mapper" /mnt/var/cache/pacman/pkg
 
-    disk_step "creating the ESP filesystem on $efi_dev" mkfs.fat -F32 -n OMARCHY_EFI "$efi_dev"
+    disk_step "creating the ESP filesystem on $efi_dev" mkfs.fat -F32 -n COLLIE_EFI "$efi_dev"
     # Typed, not probed: an unrecognised probe walks /proc/filesystems, and on
     # the live ISO squashfs answers first.
     disk_step "mounting the ESP" mount -t vfat "$efi_dev" /mnt"$esp_mount_in_target"
@@ -940,7 +940,7 @@ run_partition_execute() {
   fi
 
   # enable_fallback writes the loader to EFI/BOOT/BOOTX64.EFI as well as
-  # EFI/limine. That path is only ever claimed on the Omarchy ESP, which
+  # EFI/limine. That path is only ever claimed on the Collie ESP, which
   # run_partition_execute just created, wipefs'd and mkfs.fat'd in free
   # space; the Windows ESP is never mounted here. Firmware that drops or
   # ignores the "Limine" NVRAM entry (some AMI/MSI boards) still finds the
@@ -954,7 +954,7 @@ run_partition_execute() {
     "audio_config": { "audio": "pipewire" },
     "bootloader_config": { "bootloader": "Limine", "uki": false, "removable": false },
     "custom_commands": [],
-    "omarchy_install": {
+    "collie_install": {
         "input_method": "${keyboard_input_method:-none}",
         "input_xkb_layout": "${keyboard_xkb_layout:-}",
         "language": "$language",
@@ -1004,8 +1004,8 @@ $archinstall_custom_servers
         "base-devel",
         "git",
         "omarchy-keyring",
-        "$OMARCHY_SETTINGS_PACKAGE",
-        "$OMARCHY_RUNTIME_PACKAGE"
+        "$COLLIE_SETTINGS_PACKAGE",
+        "$COLLIE_RUNTIME_PACKAGE"
     ],
     "profile_config": {
         "gfx_driver": null,
@@ -1044,7 +1044,7 @@ disk_form() {
   local status
   while true; do
     selected_display=$(echo "$disk_options" | gum choose --header "$(t disk.header)") && break || status=$?
-    ((status == OMARCHY_FORM_BACK)) || abort
+    ((status == COLLIE_FORM_BACK)) || abort
   done
   disk=$(echo "$selected_display" | awk '{print $1}')
 }
@@ -1089,7 +1089,7 @@ requires_full_disk_install() {
   [[ -z "$free_space_b" || "$free_space_b" -eq 0 ]]
 }
 
-# Returns gum's status: OMARCHY_FORM_BACK for Esc, OMARCHY_FORM_SIGNAL for
+# Returns gum's status: COLLIE_FORM_BACK for Esc, COLLIE_FORM_SIGNAL for
 # Ctrl+C.
 install_mode_form() {
   local free_space_offered=false choice choices=()
@@ -1170,7 +1170,7 @@ select_installation() {
       # still ends the install.
       install_mode_form && status=0 || status=$?
       if ((status != 0)); then
-        ((status == OMARCHY_FORM_BACK)) || abort
+        ((status == COLLIE_FORM_BACK)) || abort
         install_mode="other_disk"
       fi
     fi
@@ -1233,8 +1233,8 @@ if $defer_provisioning; then
   password=""
   password_hash=""
   # Neutral defaults for the install; the owner overwrites both in the
-  # first-boot OOBE (omarchy-provision-owner).
-  hostname="omarchy"
+  # first-boot OOBE (collie-provision-owner).
+  hostname="collie"
   timezone="UTC"
 
   # Jump straight to disk selection + overwrite confirmation (encrypted by
@@ -1259,17 +1259,17 @@ if [[ $install_target == "free_space" ]]; then
   # Refuse a corrupt or missing install medium before we partition or format
   # anything. The full-disk path clears this in the orchestrator before
   # archinstall formats; the free-space path formats here, in the configurator,
-  # so it runs the same gate first. omarchy-wait-root-image-verify collects the
+  # so it runs the same gate first. collie-wait-root-image-verify collects the
   # boot-time hasher's verdict, waiting for it if it is still running. (2>&1
   # 1>/dev/null captures stderr, where the failure message is, and drops the
   # boot-medium/scheduler line on stdout — the orchestrator logs that later.
-  # OMARCHY_VERIFY_PROGRESS routes a live percent line straight to the
+  # COLLIE_VERIFY_PROGRESS routes a live percent line straight to the
   # terminal while the hash is still running, so a wait on a slow medium
   # shows movement instead of a frozen step header.)
   if [[ ${1:-} != "dry" ]]; then
     step "Verifying the install medium"
-    if ! verify_error=$(OMARCHY_VERIFY_PROGRESS=/dev/tty OMARCHY_VERIFY_PROGRESS_INDENT="$PADDING_LEFT" \
-      omarchy-wait-root-image-verify 2>&1 1>/dev/null); then
+    if ! verify_error=$(COLLIE_VERIFY_PROGRESS=/dev/tty COLLIE_VERIFY_PROGRESS_INDENT="$PADDING_LEFT" \
+      collie-wait-root-image-verify 2>&1 1>/dev/null); then
       abort "$(head -1 <<<"$verify_error")"
     fi
   fi
@@ -1328,7 +1328,7 @@ cat <<-_EOF_ >user_configuration.json
     "audio_config": { "audio": "pipewire" },
     "bootloader_config": { "bootloader": "Limine", "uki": false, "removable": false },
     "custom_commands": [],
-    "omarchy_install": {
+    "collie_install": {
         "input_method": "${keyboard_input_method:-none}",
         "input_xkb_layout": "${keyboard_xkb_layout:-}",
         "language": "$language",
@@ -1429,8 +1429,8 @@ $archinstall_custom_servers
         "base-devel",
         "git",
         "omarchy-keyring",
-        "$OMARCHY_SETTINGS_PACKAGE",
-        "$OMARCHY_RUNTIME_PACKAGE"
+        "$COLLIE_SETTINGS_PACKAGE",
+        "$COLLIE_RUNTIME_PACKAGE"
     ],
     "profile_config": {
         "gfx_driver": null,

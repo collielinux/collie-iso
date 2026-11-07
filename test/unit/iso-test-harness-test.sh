@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# bin/omarchy-iso-test without a VM: its functions are taken out of the
+# bin/collie-iso-test without a VM: its functions are taken out of the
 # script and run against stubs for QEMU, QMP and OCR, so what the harness
 # decides from what it sees can be checked here.
 
@@ -9,7 +9,7 @@
 set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-harness="$ROOT/bin/omarchy-iso-test"
+harness="$ROOT/bin/collie-iso-test"
 bash -n "$harness"
 
 work=$(mktemp -d)
@@ -33,13 +33,13 @@ take() {
 # installed system has to come up to its own console login.
 
 take install_phase wait_for_first_boot_login
-GUEST_HOSTNAME="omarchy-test"
+GUEST_HOSTNAME="collie-test"
 SSH_KEY="$work/id_ed25519"
 BASE_DISK="$work/base.qcow2"
 BASE_OVMF="$work/OVMF_VARS.fd"
 OVMF_VARS_TEMPLATE="$work/OVMF_VARS.template"
 RUN_DIR="$work"
-ISO="$work/omarchy.iso"
+ISO="$work/collie.iso"
 BOOT_TIMEOUT=60
 FREE_SPACE=false PROVISION=false ENCRYPT=false NO_NETWORK=true
 touch "$SSH_KEY" "$OVMF_VARS_TEMPLATE"
@@ -80,7 +80,7 @@ screens "" "archiso login:"
 offline_install
 ((installed != 0)) || fail "an offline install passed without the installed system reaching a login"
 
-screens "Rebooting" "" "Arch Linux 6.17 (tty3)" "omarchy-test login:"
+screens "Rebooting" "" "Arch Linux 6.17 (tty3)" "collie-test login:"
 offline_install
 ((installed == 0)) || fail "an offline install that reached its login failed: $(cat "$work/err")"
 grep -qx "success-first-boot-no-network" "$work/captured" ||
@@ -94,10 +94,10 @@ echo "ok - an offline install passes only once the installed system reaches its 
 # (Arch's acpica) when either is asked for, and a table that does not compile
 # has to say why.
 
-# The setup is the block of omarchy-pkg-add lines at the top level.
-setup=$(sed -n '/^omarchy-pkg-add qemu-full/,/^$/p' "$harness")
-[[ -n $setup ]] || fail "the harness no longer installs its dependencies with omarchy-pkg-add"
-omarchy-pkg-add() { added+=("$@"); }
+# The setup is the block of collie-pkg-add lines at the top level.
+setup=$(sed -n '/^collie-pkg-add qemu-full/,/^$/p' "$harness")
+[[ -n $setup ]] || fail "the harness no longer installs its dependencies with collie-pkg-add"
+collie-pkg-add() { added+=("$@"); }
 dependencies() { added=(); BATTERY=$1; shift; ACPI_HIDS=("$@"); eval "$setup"; }
 
 dependencies true
@@ -132,7 +132,7 @@ echo "ok - fake ACPI devices bring iasl with them and show its errors"
 naming=$(sed -n '/^BASE_NAME="/,/^BASE_DIR=/p' "$harness")
 [[ -n $naming ]] || fail "the harness no longer names its base image with BASE_NAME"
 base_name() { # [VAR=value | VAR+=(value)]...
-  ISO="$work/omarchy.iso" KEYBOARD_LABEL="English (US)" REPO_DIR="$work"
+  ISO="$work/collie.iso" KEYBOARD_LABEL="English (US)" REPO_DIR="$work"
   ENCRYPT=false PROVISION=false FREE_SPACE=false
   FAKE_PCI=() SMBIOS=() CPU_ID="" BATTERY=false ACPI_HIDS=() NO_NETWORK=false
   local setting
@@ -141,7 +141,7 @@ base_name() { # [VAR=value | VAR+=(value)]...
   echo "$BASE_NAME"
 }
 
-[[ $(base_name) == omarchy ]] || fail "the plain install's base image moved to $(base_name), so existing ones are not reused"
+[[ $(base_name) == collie ]] || fail "the plain install's base image moved to $(base_name), so existing ones are not reused"
 declare -A seen=([$(base_name)]="no fake hardware")
 for setting in "FAKE_PCI+=(106b:1802:088000)" "FAKE_PCI+=(10de:2684:030000)" \
   "SMBIOS+=('manufacturer=Framework,,product=Laptop 16')" "CPU_ID=vendor=GenuineIntel,model=170" \
@@ -199,10 +199,10 @@ echo "ok - fake PCI devices stay up as long as their VM, and stop after it"
 # function against the product's actual ordering, refusing an erase choice.
 (
   take drive_configurator
-  source "$ROOT/configs/airootfs/usr/share/omarchy-iso/disk-partitioning.sh"
+  source "$ROOT/configs/airootfs/usr/share/collie-iso/disk-partitioning.sh"
   mapfile -t modes < <(install_mode_choices true 2)
   FREE_SPACE=true PROVISION=false ENCRYPT=true
-  KEYBOARD_LABEL="English (US)" GUEST_USER=omarchy GUEST_PASSWORD=omarchy
+  KEYBOARD_LABEL="English (US)" GUEST_USER=collie GUEST_PASSWORD=collie
   picking=false selected=0 choice=""
   type_text() { :; }
   capture_console() { :; }

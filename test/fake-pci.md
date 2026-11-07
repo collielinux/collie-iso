@@ -1,6 +1,6 @@
 # Hardware the test VM does not have
 
-`bin/omarchy-iso-test --fake-pci VENDOR:DEVICE:CLASS` gives the VM a PCI
+`bin/collie-iso-test --fake-pci VENDOR:DEVICE:CLASS` gives the VM a PCI
 function with those IDs. The guest is unmodified: `lspci`,
 `/sys/bus/pci/devices`, udev and modalias all report them. No driver can
 drive the device; what it exercises is everything that keys off the hardware

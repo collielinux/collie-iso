@@ -66,13 +66,13 @@ take bootstrap_ssh
 BASE_DIR="$work/base"
 SSH_KEY="$work/id_ed25519"
 HTTP_PORT=2323
-GUEST_USER=omarchy GUEST_PASSWORD=omarchy
+GUEST_USER=collie GUEST_PASSWORD=collie
 echo "ssh-ed25519 AAAA test" >"$SSH_KEY.pub"
 mkdir -p "$work/bin"
 printf '#!/bin/sh\nexit 0\n' >"$work/bin/python3" # the bootstrap's HTTP server
 chmod +x "$work/bin/python3"
 PATH="$work/bin:$PATH"
-ocr_screen() { echo "omarchy-test login:"; }
+ocr_screen() { echo "collie-test login:"; }
 # The first attempt's password prompt never shows; the second one's does.
 wait_for_screen() { [[ $(grep ctrl-alt-f "$work/pressed" | tail -n1) != ctrl-alt-f3 ]]; }
 wait_for_ssh() { true; }
@@ -92,7 +92,7 @@ take wait_for_unattended_install answer_luks_prompt
 ENCRYPT=true
 INSTALL_TIMEOUT=600
 ssh_guest() { false; }
-ocr_screen() { echo "OMARCHY"; } # the logo and nothing else, for ever
+ocr_screen() { echo "COLLIE"; } # the logo and nothing else, for ever
 
 echo 0 >"$work/slept"
 : >"$work/pressed"
@@ -130,8 +130,8 @@ for layout in us uk; do
   ((status == 0)) || fail "the $layout layout was refused: $(cat "$work/out")"
 done
 run kb_layout_typeable de
-((status != 0)) || fail "the de layout was accepted, where the passphrase omarchy types as omarchz"
-grep -q "OMARCHY_INTEGRATION_KB_LAYOUT=de" "$work/out" || fail "the refusal does not name the setting: $(cat "$work/out")"
+((status != 0)) || fail "the de layout was accepted, where the passphrase collie types as omarchz"
+grep -q "COLLIE_INTEGRATION_KB_LAYOUT=de" "$work/out" || fail "the refusal does not name the setting: $(cat "$work/out")"
 echo "ok - a layout the harness cannot type is refused"
 
 # What type_text pressed for each text, under each layout.
@@ -142,7 +142,7 @@ typed() {
 }
 take type_text
 KB_LAYOUT=uk TYPE_LAYOUT=uk
-[[ $(typed omarchy) == "o m a r c h y" ]] || fail "the passphrase was typed under uk as $(typed omarchy)"
+[[ $(typed collie) == "o m a r c h y" ]] || fail "the passphrase was typed under uk as $(typed collie)"
 [[ $(typed "test@omarchy.org") == "t e s t shift-apostrophe o m a r c h y dot o r g" ]] ||
   fail "the email was typed under uk as $(typed "test@omarchy.org")"
 [[ $(typed "cd ~") == "c d spc shift-backslash" ]] || fail "~ was typed under uk as $(typed "cd ~")"
@@ -190,12 +190,12 @@ ocr_screen() { echo "archiso login:"; }
 wait_for_screen() { grep -qi "$1" <<<"$screen"; }
 ssh_live_root() { grep -q curl "$work/typed"; }
 type_text() { echo "$(grep ctrl-alt-f "$work/pressed" | tail -n1) $1" >>"$work/typed"; }
-screen=$'Omarchy 7.2.8-9-omarchy (tty3)\narchiso login: root\n11 iGarchiso \u00a5 #'
+screen=$'Collie 7.2.8-9-collie (tty3)\narchiso login: root\n11 iGarchiso \u00a5 #'
 : >"$work/pressed"; : >"$work/typed"
 run bootstrap_live_root_ssh
 ((status == 0)) || fail "the root prompt as OCR reads it was not taken for a shell: $(cat "$work/out")"
 grep -q '^ctrl-alt-f3 curl' "$work/typed" || fail "the bootstrap command was not typed at the root prompt: $(cat "$work/typed")"
-screen=$'Omarchy 7.2.8-9-omarchy (tty3)\narchiso login: root'
+screen=$'Collie 7.2.8-9-collie (tty3)\narchiso login: root'
 : >"$work/pressed"; : >"$work/typed"
 run bootstrap_live_root_ssh
 grep -q curl "$work/typed" && fail "the bootstrap command was typed at a login banner: $(cat "$work/typed")"
@@ -253,7 +253,7 @@ echo "ok - pxe's NBD wait keeps to 900 s after a failed load"
 # with an @ arrives with a " in its place.
 take_from "$ROOT/test/integration.d/factory-reset-test.sh" drive_first_boot
 take type_text
-KB_LAYOUT=uk TYPE_LAYOUT=uk GUEST_HOSTNAME=omarchy-test
+KB_LAYOUT=uk TYPE_LAYOUT=uk GUEST_HOSTNAME=collie-test
 wait_for_screen() { true; }
 printf '%s\n' "Select keyboard layout" "Username" "Password" "Confirm password" \
   "Hostname" "Timezone" "Does this look right?" >"$work/screens"
@@ -279,7 +279,7 @@ echo "ok - the factory first boot is typed into as us after its keyboard step"
 take wait_for_ssh answer_luks_prompt type_text
 ENCRYPT=true KB_LAYOUT=uk TYPE_LAYOUT=uk
 ssh_guest() { [[ $(paste -sd' ' "$work/pressed") == *"o m a r c h y ret"* ]]; }
-for screen in "OMARCHY" "A password is required to access the root volume:"; do
+for screen in "COLLIE" "A password is required to access the root volume:"; do
   ocr_screen() { echo "$screen"; }
   : >"$work/pressed"
   run wait_for_ssh 300
@@ -287,7 +287,7 @@ for screen in "OMARCHY" "A password is required to access the root volume:"; do
 done
 echo "ok - wait_for_ssh types the passphrase at a logo-only prompt and a readable one"
 
-ocr_screen() { echo "omarchy-test login:"; }
+ocr_screen() { echo "collie-test login:"; }
 : >"$work/pressed"
 run wait_for_ssh 60
 ((status == 1)) || fail "a booted console without SSH did not time out (status $status): $(tail -n3 "$work/out")"
@@ -306,14 +306,14 @@ echo "ok - wait_for_ssh types nothing into a booted console"
 naming=$(sed -n '/^BASE_DIR="/,/^RUN_DIR=/p' "$harness")
 [[ -n $naming ]] || fail "the harness no longer names its base folder with BASE_DIR"
 base_dir() { # [VAR=value]...
-  local ROOT=/r ISO=/i/omarchy-9.9.9.iso FIRMWARE=uefi VARIANT=default KB_LAYOUT=us \
+  local ROOT=/r ISO=/i/collie-9.9.9.iso FIRMWARE=uefi VARIANT=default KB_LAYOUT=us \
     ENCRYPT=false UKI=false DISK_GB=40 SCENARIO=boot setting BASE_DIR RUN_DIR
   for setting; do eval "local $setting"; done
   eval "$naming"
   echo "$BASE_DIR"
 }
 
-[[ $(base_dir) == /r/test-runs/omarchy-9.9.9-integration ]] ||
+[[ $(base_dir) == /r/test-runs/collie-9.9.9-integration ]] ||
   fail "the default install's base folder moved to $(base_dir), so the saved ones are not reused"
 declare -A seen=([$(base_dir)]="the default settings")
 for setting in FIRMWARE=bios VARIANT=small KB_LAYOUT=uk ENCRYPT=true UKI=true DISK_GB=24; do

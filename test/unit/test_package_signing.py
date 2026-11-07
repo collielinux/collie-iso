@@ -18,7 +18,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter",
     types.ModuleType("orchestrator.archinstall_adapter"),
@@ -44,22 +44,22 @@ class TargetKeyringTest(unittest.TestCase):
         return popen.call_args.args[0][-1]
 
     def test_aarch64_populates_the_arch_linux_arm_keys(self):
-        self.assertIn("--populate archlinux omarchy archlinuxarm", self.script("aarch64"))
+        self.assertIn("--populate archlinux collie archlinuxarm", self.script("aarch64"))
 
     def test_x86_64_does_not(self):
         script = self.script("x86_64")
-        self.assertIn("--populate archlinux omarchy", script)
+        self.assertIn("--populate archlinux collie", script)
         self.assertNotIn("archlinuxarm", script)
 
 
 class KeyringBeforeSystemFinalizerTest(unittest.TestCase):
     # On aarch64 the runtime's own post-install initialises and populates the
     # target keyring; two pacman-keys on one gnupg dir corrupt it, so the
-    # unit must have finished when omarchy-apply-system starts.
+    # unit must have finished when collie-apply-system starts.
     def pending_at_finalizer(self, machine):
         ctx = mock.Mock()
         ctx.defer_provisioning = False
-        ctx.username = "omarchy"
+        ctx.username = "collie"
         ctx.target = Path("/mnt")
         proc = mock.Mock(returncode=0)
         proc.communicate.return_value = ("", None)
@@ -86,7 +86,7 @@ class PackageSigningTest(unittest.TestCase):
     target keyring either trusts that key or does not."""
 
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="omarchy-sig-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="collie-sig-"))
         self.addCleanup(shutil.rmtree, self.tmp, True)
 
         self.builder = self.tmp / "builder"

@@ -1,10 +1,10 @@
 #!/bin/bash
 #
 # Desktop smoke: after a real first-boot provisioning, prove the graphical
-# session comes up and Omarchy's primary keybindings actually drive it --
+# session comes up and Collie's primary keybindings actually drive it --
 # launcher surfaces, terminals, tiling, floating, and workspaces -- checked
 # through Hyprland's own IPC (hyprctl/jq) rather than screenshots. Ported from
-# bin/omarchy-iso-test's shortcut_smoke_phase into the base-image framework so
+# bin/collie-iso-test's shortcut_smoke_phase into the base-image framework so
 # it runs per-PR alongside the install matrix.
 #
 # Runs on the default variant only: desktop behaviour does not vary by disk
@@ -38,8 +38,8 @@ ssh_session() {
     export LANG=\${LANG:-C.UTF-8}; \
     export HYPRLAND_INSTANCE_SIGNATURE=\$(ls -t \$XDG_RUNTIME_DIR/hypr | head -1); \
     export WAYLAND_DISPLAY=\$(find \$XDG_RUNTIME_DIR -maxdepth 1 -name 'wayland-*' ! -name '*.lock' -printf '%f\\n' | head -1); \
-    export OMARCHY_PATH=/usr/share/omarchy; \
-    export PATH=\$OMARCHY_PATH/bin:\$PATH; \
+    export COLLIE_PATH=/usr/share/collie; \
+    export PATH=\$COLLIE_PATH/bin:\$PATH; \
     $command" </dev/null
 }
 
@@ -77,11 +77,11 @@ guest_layer_absent() {
 # the keyboard for the checks after it. The dock's app picker has no hide
 # command; its apps command toggles it.
 close_shortcut_surfaces() {
-  ssh_session 'for plugin in omarchy.menu omarchy.emojis omarchy.clipboard omarchy.audio; do
-    omarchy-shell shell hide "$plugin" >/dev/null 2>&1 || true
+  ssh_session 'for plugin in collie.menu collie.emojis collie.clipboard collie.audio; do
+    collie-shell shell hide "$plugin" >/dev/null 2>&1 || true
   done
-  if hyprctl -j layers | jq -e '\''[.. | objects | select(.namespace? == "omarchy-dock-apps")] | length > 0'\'' >/dev/null; then
-    omarchy-shell omarchy.dock apps >/dev/null 2>&1 || true
+  if hyprctl -j layers | jq -e '\''[.. | objects | select(.namespace? == "collie-dock-apps")] | length > 0'\'' >/dev/null; then
+    collie-shell collie.dock apps >/dev/null 2>&1 || true
   fi' >/dev/null 2>&1 || true
 }
 
@@ -185,10 +185,10 @@ verify_desktop_shortcuts() {
 }
 
 verify_universal_clipboard_shortcuts() {
-  local copy_token="OmarchyUniversalCopy$(date +%s)"
-  local paste_token="OmarchyUniversalPaste$(date +%s)"
-  local terminal_token="OmarchyTerminalPaste$(date +%s)"
-  local terminal_result="/tmp/omarchy-universal-terminal-paste"
+  local copy_token="CollieUniversalCopy$(date +%s)"
+  local paste_token="CollieUniversalPaste$(date +%s)"
+  local terminal_token="CollieTerminalPaste$(date +%s)"
+  local terminal_result="/tmp/collie-universal-terminal-paste"
 
   cleanup_shortcut_state
   ssh_session "setsid -f chromium --new-window about:blank >/dev/null 2>&1"
@@ -259,17 +259,17 @@ verify_universal_clipboard_shortcuts() {
 shortcut_smoke_phase() {
   log "Exercising primary desktop shortcuts through the VM keyboard"
 
-  local name chord namespace apps_namespace=omarchy-menu
+  local name chord namespace apps_namespace=collie-menu
   # Super+Alt+Space opens the dock's app picker since omacom/omarchy#15263
-  # and the menu before it. Expect whichever the installed Omarchy binds.
-  if ssh_session "grep -q 'omarchy.dock apps' /usr/share/omarchy/default/hypr/bindings/utilities.lua"; then
-    apps_namespace=omarchy-dock-apps
+  # and the menu before it. Expect whichever the installed Collie binds.
+  if ssh_session "grep -q 'collie.dock apps' /usr/share/collie/default/hypr/bindings/utilities.lua"; then
+    apps_namespace=collie-dock-apps
   fi
-  local shortcuts="menu|meta_l-spc|omarchy-menu
+  local shortcuts="menu|meta_l-spc|collie-menu
 apps|meta_l-alt-spc|$apps_namespace
-emojis|meta_l-ctrl-e|omarchy-emojis
-clipboard|meta_l-ctrl-v|omarchy-clipboard
-audio-panel|meta_l-ctrl-a|omarchy-keyboard-panel"
+emojis|meta_l-ctrl-e|collie-emojis
+clipboard|meta_l-ctrl-v|collie-clipboard
+audio-panel|meta_l-ctrl-a|collie-keyboard-panel"
 
   cleanup_shortcut_state
   while IFS='|' read -r name chord namespace; do
@@ -291,12 +291,12 @@ audio-panel|meta_l-ctrl-a|omarchy-keyboard-panel"
 # the path rather than reproduces the crash: a window must appear and no
 # core may be recorded, each time on a fresh profile.
 browser_launch_phase() {
-  local launches=${OMARCHY_BROWSER_LAUNCHES:-3} i out failed=0
+  local launches=${COLLIE_BROWSER_LAUNCHES:-3} i out failed=0
 
   for ((i = 1; i <= launches; i++)); do
     out=$(ssh_session "pkill -x chromium 2>/dev/null; sleep 1; rm -rf ~/.config/chromium ~/.cache/chromium; \
       before=\$(coredumpctl list --no-legend 2>/dev/null | grep -c chromium); \
-      systemd-run --user --quiet --collect --unit=omarchy-browser-smoke-$i-\$RANDOM uwsm-app -- /usr/bin/chromium 'https://example.com/?omarchy-smoke=$i'; \
+      systemd-run --user --quiet --collect --unit=collie-browser-smoke-$i-\$RANDOM uwsm-app -- /usr/bin/chromium 'https://example.com/?collie-smoke=$i'; \
       sleep 9; \
       after=\$(coredumpctl list --no-legend 2>/dev/null | grep -c chromium); \
       windows=\$(hyprctl -j clients | jq '[.[] | select(.class | test(\"(?i)chrom\"))] | length'); \
@@ -314,7 +314,7 @@ browser_launch_phase() {
 ssh_ready() { ssh_guest true; }
 
 # The base was provisioned at install time (cidata created the owner), so it
-# boots straight to a graphical login -- the Omarchy logo over a password field
+# boots straight to a graphical login -- the Collie logo over a password field
 # -- rendered by a Wayland greeter running as its own user, not the first-boot
 # wizard. It can take input once any Wayland compositor is up.
 login_ready() {

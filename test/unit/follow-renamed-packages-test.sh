@@ -29,10 +29,10 @@ check() {
 fixture() {
   rm -rf "$WORK/install"
   mkdir -p "$WORK/install/hardware/apple"
-  # The block as omarchy 4.0.3 ships it.
+  # The block as collie 4.0.3 ships it.
   cat >"$WORK/install/hardware/apple/fix-t2.sh" <<'EOF'
 if lspci -nn | grep "106b:180[12]" >/dev/null; then
-  omarchy-pkg-add \
+  collie-pkg-add \
     linux-t2 \
     linux-t2-headers \
     apple-t2-audio-config \
@@ -40,7 +40,7 @@ if lspci -nn | grep "106b:180[12]" >/dev/null; then
     t2fanrd
 fi
 EOF
-  echo 'omarchy-pkg-add apple-bcm-firmware-fetcher' >"$WORK/install/hardware/apple/already-new.sh"
+  echo 'collie-pkg-add apple-bcm-firmware-fetcher' >"$WORK/install/hardware/apple/already-new.sh"
 }
 asked() { grep -cE "^ +$1( \\\\)?\$" "$WORK/install/hardware/apple/fix-t2.sh"; }
 
@@ -53,7 +53,7 @@ check "rename: the old name is gone" 0 "$(asked apple-bcm-firmware)"
 check "rename: the new name is asked for" 1 "$(asked apple-bcm-firmware-fetcher)"
 check "rename: the neighbours are untouched" "1 1 1" "$(asked linux-t2) $(asked linux-t2-headers) $(asked t2fanrd)"
 check "rename: a script already on the new name is not rewritten twice" \
-  "omarchy-pkg-add apple-bcm-firmware-fetcher" "$(cat "$WORK/install/hardware/apple/already-new.sh")"
+  "collie-pkg-add apple-bcm-firmware-fetcher" "$(cat "$WORK/install/hardware/apple/already-new.sh")"
 
 fixture
 : >"$WORK/renamed"

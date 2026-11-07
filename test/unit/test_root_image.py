@@ -19,7 +19,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"))
 
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter", types.ModuleType("orchestrator.archinstall_adapter")
@@ -106,7 +106,7 @@ class VerifyRootImageLayoutTest(unittest.TestCase):
 
 class VerifyRootImageTest(unittest.TestCase):
     """verify_install_medium delegates to the shared shell helper
-    (omarchy-wait-root-image-verify): it passes when the helper exits 0 and
+    (collie-wait-root-image-verify): it passes when the helper exits 0 and
     fails the install with the helper's message when it does not. The wait,
     the systemd handoff and the corrupt-medium wording live in the helper and
     are covered by test/unit/wait-root-image-verify-test.sh."""
@@ -139,7 +139,7 @@ class VerifyRootImageTest(unittest.TestCase):
     def test_corrupt_medium_raises_with_the_helpers_message(self):
         stderr = ("install medium is corrupt: re-flash it\n"
                   "sha256 mismatch on the root image\n"
-                  "omarchy-root.img.zst: FAILED")
+                  "collie-root.img.zst: FAILED")
         with self.helper_returns(1, stdout="boot medium: /dev/sda1 ...\n", stderr=stderr):
             with self.assertRaises(RuntimeError) as raised:
                 phases_impl.verify_install_medium(self.ctx)
@@ -158,7 +158,7 @@ class VerifyRootImageTest(unittest.TestCase):
         # size-based timeout (here 3 s). The helper's stall check must get to
         # run during that wait, not after the progress mirroring has sat it out.
         with tempfile.TemporaryDirectory() as tmp:
-            stream = Path(tmp) / "omarchy-root.img.zst"
+            stream = Path(tmp) / "collie-root.img.zst"
             stream.write_bytes(b"\0" * 4096)
             began = time.monotonic()
 
@@ -199,7 +199,7 @@ class PublishVerifyProgressTest(unittest.TestCase):
 
     def test_mirrors_hasher_read_position(self):
         with tempfile.TemporaryDirectory() as tmp:
-            stream = (Path(tmp) / "omarchy-root.img.zst").resolve()
+            stream = (Path(tmp) / "collie-root.img.zst").resolve()
             stream.write_bytes(b"\0" * 4096)
             states = iter(["activating", "active"])
 
@@ -227,7 +227,7 @@ class PublishVerifyProgressTest(unittest.TestCase):
         # 2000 + 1024 of 6096 bytes.
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp).resolve()
-            stream = tmp / "omarchy-root.img.zst"
+            stream = tmp / "collie-root.img.zst"
             stream.write_bytes(b"\0" * 4096)
             mirror = tmp / "mirror"
             mirror.mkdir()
@@ -267,7 +267,7 @@ class PublishVerifyProgressTest(unittest.TestCase):
 
     def test_missing_image_is_a_no_op(self):
         with mock.patch.object(phases_impl, "ROOT_IMAGE",
-                               Path("/nonexistent/omarchy-root.img.zst")), \
+                               Path("/nonexistent/collie-root.img.zst")), \
              mock.patch.object(phases_impl, "_verify_unit_property") as show:
             phases_impl._publish_verify_progress(ctx=None)
         show.assert_not_called()
@@ -318,7 +318,7 @@ class VerifyPreMountedRootEmptyTest(unittest.TestCase):
     so a pre-mounted target must be a freshly made filesystem. The stand-in
     for mount fills the top level the check mounts with a layout."""
 
-    DEVICE = "/dev/mapper/omarchy_root"
+    DEVICE = "/dev/mapper/collie_root"
 
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
@@ -418,7 +418,7 @@ class FinishRootImageTest(unittest.TestCase):
         self.calls = []
         for patch in (
             mock.patch.object(phases_impl, "_root_image_required_packages",
-                              return_value=["limine", "omarchy-keyring", "omarchy"]),
+                              return_value=["limine", "omarchy-keyring", "collie"]),
             mock.patch.object(phases_impl.arch, "target_package_names", create=True,
                               side_effect=lambda target: self.packages),
             mock.patch.object(phases_impl.subprocess, "run",
@@ -433,7 +433,7 @@ class FinishRootImageTest(unittest.TestCase):
 
     def test_missing_required_package_fails_before_anything_else(self):
         self.packages.discard("omarchy")
-        with self.assertRaisesRegex(RuntimeError, "lacks required packages: omarchy"):
+        with self.assertRaisesRegex(RuntimeError, "lacks required packages: collie"):
             phases_impl._finish_root_image(self.ctx)
         self.assertEqual(self.calls, [])
 
@@ -480,11 +480,11 @@ class TargetKeyringUnitTest(unittest.TestCase):
     def test_start_runs_init_then_populate_in_a_waited_unit(self):
         phases_impl._start_target_keyring_init(self.ctx)
 
-        self.assertEqual(self.runs, [["systemctl", "reset-failed", "omarchy-target-keyring"]])
+        self.assertEqual(self.runs, [["systemctl", "reset-failed", "collie-target-keyring"]])
         (cmd, kwargs), = self.popens
         self.assertEqual(
             cmd[:6],
-            ["systemd-run", "--wait", "--pipe", "--collect", "--quiet", "--unit=omarchy-target-keyring"],
+            ["systemd-run", "--wait", "--pipe", "--collect", "--quiet", "--unit=collie-target-keyring"],
         )
         self.assertEqual(cmd[6:8], ["sh", "-c"])
         self.assertEqual(
@@ -515,7 +515,7 @@ class TargetKeyringUnitTest(unittest.TestCase):
         proc = FakeUnitProc(returncode=1, output="killed")
         self.ctx.state["target_keyring_proc"] = proc
         phases_impl.stop_target_keyring_init(self.ctx)
-        self.assertEqual(self.runs, [["systemctl", "stop", "omarchy-target-keyring"]])
+        self.assertEqual(self.runs, [["systemctl", "stop", "collie-target-keyring"]])
         self.assertEqual(proc.joined, 1)
         self.assertNotIn("target_keyring_proc", self.ctx.state)
 

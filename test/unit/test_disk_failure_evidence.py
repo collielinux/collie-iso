@@ -15,11 +15,11 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 
 from orchestrator.command import capture  # noqa: E402
 
-source = ROOT / "configs/airootfs/usr/share/omarchy-iso/orchestrator/archinstall_adapter.py"
+source = ROOT / "configs/airootfs/usr/share/collie-iso/orchestrator/archinstall_adapter.py"
 tree = ast.parse(source.read_text())
 functions = [
     node for node in tree.body

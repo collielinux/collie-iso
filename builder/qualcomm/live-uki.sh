@@ -10,7 +10,7 @@ set -euo pipefail
 
 kernel=/boot/vmlinuz-$1
 initrd=/boot/initramfs-$1.img
-uki=/boot/omarchy-live.efi
+uki=/boot/collie-live.efi
 hwids=/usr/lib/systemd/boot/hwids/aa64
 
 # The kernel package keeps its Snapdragon device trees under its own name.
@@ -55,7 +55,7 @@ fi
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 printf '%s\n' "${dtbs[@]}" >"$work/dtbs.list"
-OMARCHY_QCOM_DTBS_FILE="$work/dtbs.list" mkinitcpio \
+COLLIE_QCOM_DTBS_FILE="$work/dtbs.list" mkinitcpio \
   -k "$kernel" -c /etc/mkinitcpio.conf.d/archiso.conf \
   -A qcom_early_startup -g "$work/initramfs.img"
 initrd="$work/initramfs.img"

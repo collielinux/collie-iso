@@ -2,9 +2,9 @@
 
 ## Goal
 
-Support Omarchy installs on consumer laptops that ship with UEFI Secure Boot enabled and trust the Microsoft UEFI CA, without requiring users to disable Secure Boot.
+Support Collie installs on consumer laptops that ship with UEFI Secure Boot enabled and trust the Microsoft UEFI CA, without requiring users to disable Secure Boot.
 
-This plan targets normal consumer hardware, especially Windows dual-boot machines. OEM-controlled hardware with Omarchy-owned firmware keys is a separate path.
+This plan targets normal consumer hardware, especially Windows dual-boot machines. OEM-controlled hardware with Collie-owned firmware keys is a separate path.
 
 ## Current State (August 2026)
 
@@ -15,34 +15,34 @@ Where the repo stands today, and what that changes about this plan:
 - The installed system already boots a UKI: the orchestrator's `finalize_limine_boot` phase has mkinitcpio build the UKI onto the ESP, and `validate_boot` asserts it exists. "Build an installed UKI" is no longer new work; the new work is signing that UKI and choosing a second stage that enforces signatures.
 - Kernel updates already regenerate the UKI through the target's mkinitcpio pacman hooks. The update flow below reduces to adding a signing step and fallback retention to machinery that exists.
 
-The critical path is external: the Microsoft-signed shim. That requires an EV code-signing certificate for the Omarchy org, a shim built from a reviewed upstream release with Omarchy SBAT identity and NX compatibility, and a `shim-review` submission — historically weeks to months of calendar time, with standing obligations afterward (SBAT revocation response, resubmission when the embedded cert or shim version changes). Start it first; every phase below except release signing can proceed in parallel on dev test keys in QEMU.
+The critical path is external: the Microsoft-signed shim. That requires an EV code-signing certificate for the Collie org, a shim built from a reviewed upstream release with Collie SBAT identity and NX compatibility, and a `shim-review` submission — historically weeks to months of calendar time, with standing obligations afterward (SBAT revocation response, resubmission when the embedded cert or shim version changes). Start it first; every phase below except release signing can proceed in parallel on dev test keys in QEMU.
 
 ## Core Architecture
 
-Use a Microsoft-signed first-stage shim, then boot only signed Omarchy-controlled artifacts.
+Use a Microsoft-signed first-stage shim, then boot only signed Collie-controlled artifacts.
 
 ```text
 Firmware Secure Boot
-  -> Microsoft-signed Omarchy shim
+  -> Microsoft-signed Collie shim
     -> MokManager when key enrollment is pending
     -> signed second-stage boot manager
       -> signed Unified Kernel Image (UKI)
-        -> encrypted Omarchy root
+        -> encrypted Collie root
 ```
 
 For the installed OS, use machine-local Machine Owner Key (MOK) signing for UKIs generated during install and later kernel updates.
 
 ## Why MOK For Installed Systems
 
-Omarchy's installed UKI is machine-specific because it includes or depends on install-time data such as:
+Collie's installed UKI is machine-specific because it includes or depends on install-time data such as:
 
 - Kernel command line for encrypted root.
 - Initramfs generated for the installed system.
 - Kernel package version selected at install or update time.
 
-We must not ship Omarchy's private release signing key on the ISO or installed system. Therefore:
+We must not ship Collie's private release signing key on the ISO or installed system. Therefore:
 
-1. The official ISO is signed by Omarchy release infrastructure.
+1. The official ISO is signed by Collie release infrastructure.
 2. During install, generate a machine-local Secure Boot keypair.
 3. Enroll the public certificate through MokManager.
 4. Sign installed UKIs and update-generated UKIs with the local private key.
@@ -55,7 +55,7 @@ This preserves offline tamper resistance for `/boot` while avoiding any central 
 - UEFI only.
 - Microsoft UEFI CA trust path only for consumer machines.
 - No custom firmware key enrollment for v1 consumer installs.
-- No TPM auto-unlock for Omarchy root in v1.
+- No TPM auto-unlock for Collie root in v1.
 - No attempt to modify Windows BitLocker protectors or TPM ownership.
 - Secure Boot mode uses signed UKIs only; no unsigned external kernel, initramfs, or command line files.
 - Secure Boot mode may use a different boot manager than the current Limine path until Limine has a proven verified-boot story.
@@ -79,24 +79,24 @@ If later validation proves Limine can enforce signed payloads behind shim, this 
 
 ## Required Artifacts
 
-### Omarchy Shim Artifacts
+### Collie Shim Artifacts
 
 These are release artifacts, not generated on normal developer machines:
 
 - `shimx64.efi`, signed by Microsoft UEFI CA.
 - `mmx64.efi` / MokManager artifact compatible with the shim.
 - Optional `fbx64.efi` fallback artifact if needed by the selected shim packaging.
-- Shim SBAT metadata owned by Omarchy.
-- Omarchy public release certificate embedded in shim.
+- Shim SBAT metadata owned by Collie.
+- Collie public release certificate embedded in shim.
 
-Do not depend on another distribution's shim as a permanent product strategy. Omarchy needs its own shim submission, SBAT identity, revocation path, and release process.
+Do not depend on another distribution's shim as a permanent product strategy. Collie needs its own shim submission, SBAT identity, revocation path, and release process.
 
-### Omarchy Signing Material
+### Collie Signing Material
 
 Release infrastructure owns:
 
-- Omarchy Secure Boot release private key, stored offline or in an HSM-backed CI secret store.
-- Omarchy Secure Boot release public certificate, embedded in shim and shipped for verification.
+- Collie Secure Boot release private key, stored offline or in an HSM-backed CI secret store.
+- Collie Secure Boot release public certificate, embedded in shim and shipped for verification.
 
 Installed systems own:
 
@@ -110,23 +110,23 @@ Private keys must never be committed to this repo.
 Add a Secure Boot-capable ISO build mode.
 
 ```text
-bin/omarchy-iso-make --secure-boot
+bin/collie-iso-make --secure-boot
 ```
 
 Build behavior:
 
 1. Switch the UEFI bootmode from `uefi.grub` to `uefi.systemd-boot` in `configs/profiledef.sh` (mkarchiso forbids running both). BIOS syslinux stays as-is; Secure Boot is UEFI-only.
-2. Add Microsoft-signed Omarchy shim artifacts to the ISO UEFI boot path.
+2. Add Microsoft-signed Collie shim artifacts to the ISO UEFI boot path.
 3. Build the live environment boot payload as a UKI.
-4. Sign the live UKI with the Omarchy release key in official builds.
-5. Sign any second-stage EFI binary with the Omarchy release key.
+4. Sign the live UKI with the Collie release key in official builds.
+5. Sign any second-stage EFI binary with the Collie release key.
 6. Assert that every Secure Boot UEFI entry uses the signed shim path.
 7. Assert that no unsigned kernel/initramfs path is offered in Secure Boot UEFI mode.
 
 Local developer builds should support a dev-signing mode for QEMU validation:
 
 ```text
-OMARCHY_SECURE_BOOT_SIGNING_MODE=dev
+COLLIE_SECURE_BOOT_SIGNING_MODE=dev
 ```
 
 Dev mode creates local test keys and is only expected to boot in QEMU firmware enrolled with those test keys. It must not be presented as Microsoft Secure Boot compatible.
@@ -137,7 +137,7 @@ When the live installer detects Secure Boot enabled:
 
 1. Show a Secure Boot explanation before disk mutation.
 2. If Windows is detected, follow the shipped dual-boot BitLocker policy (decrypt, not suspend — see the configurator's existing checks) and warn the user to have the recovery key available.
-3. Install Omarchy's shim to its own ESP directory, for example `EFI/Omarchy`.
+3. Install Collie's shim to its own ESP directory, for example `EFI/Collie`.
 4. Do not modify `EFI/Microsoft`.
 5. Generate a machine-local MOK keypair under the installed encrypted root.
 6. Build an installed UKI with embedded kernel, initramfs, command line, and OS release data.
@@ -150,7 +150,7 @@ When the live installer detects Secure Boot enabled:
 Expected first reboot sequence after install:
 
 ```text
-Firmware -> Omarchy shim -> MokManager -> user enrolls Omarchy machine key -> reboot -> Omarchy shim -> signed boot manager -> signed UKI -> LUKS unlock
+Firmware -> Collie shim -> MokManager -> user enrolls Collie machine key -> reboot -> Collie shim -> signed boot manager -> signed UKI -> LUKS unlock
 ```
 
 ## Kernel Update Flow
@@ -171,7 +171,7 @@ Failure policy:
 
 ## File Changes
 
-### `bin/omarchy-iso-make`
+### `bin/collie-iso-make`
 
 Add flags:
 
@@ -190,7 +190,7 @@ Add Secure Boot build support:
 - Build live UKI.
 - Sign live UKI and second-stage EFI artifact.
 - Fail official Secure Boot builds if release signing material is unavailable.
-- Write `/root/omarchy_secure_boot_mode` into the live environment.
+- Write `/root/collie_secure_boot_mode` into the live environment.
 - Assert that Secure Boot boot entries do not point at unsigned payloads.
 
 ### `builder/secure-boot/`
@@ -220,10 +220,10 @@ SECURE_BOOT_ENABLED=true
 SECURE_BOOT_INSTALL=true
 SECURE_BOOT_BOOTLOADER=systemd-boot
 SECURE_BOOT_UKI=true
-SECURE_BOOT_MOK_COMMON_NAME="Omarchy Machine Owner Key"
+SECURE_BOOT_MOK_COMMON_NAME="Collie Machine Owner Key"
 ```
 
-### `configs/airootfs/usr/share/omarchy-iso/orchestrator/`
+### `configs/airootfs/usr/share/collie-iso/orchestrator/`
 
 Add Secure Boot install support to the install phases:
 
@@ -241,19 +241,19 @@ Add Secure Boot install support to the install phases:
 Add installed files similar to:
 
 ```text
-/etc/omarchy/secure-boot.conf
+/etc/collie/secure-boot.conf
 /etc/kernel/cmdline
-/etc/pacman.d/hooks/90-omarchy-uki.hook
-/usr/local/sbin/omarchy-build-uki
-/usr/local/sbin/omarchy-sign-uki
-/boot/EFI/Omarchy/shimx64.efi
-/boot/EFI/Omarchy/mmx64.efi
-/boot/EFI/Omarchy/systemd-bootx64.efi
-/boot/EFI/Linux/omarchy-linux.efi
-/boot/EFI/Linux/omarchy-linux-fallback.efi
+/etc/pacman.d/hooks/90-collie-uki.hook
+/usr/local/sbin/collie-build-uki
+/usr/local/sbin/collie-sign-uki
+/boot/EFI/Collie/shimx64.efi
+/boot/EFI/Collie/mmx64.efi
+/boot/EFI/Collie/systemd-bootx64.efi
+/boot/EFI/Linux/collie-linux.efi
+/boot/EFI/Linux/collie-linux-fallback.efi
 ```
 
-Exact paths can change during implementation, but signed boot artifacts must stay under Omarchy-owned ESP directories.
+Exact paths can change during implementation, but signed boot artifacts must stay under Collie-owned ESP directories.
 
 ## Package Requirements
 
@@ -287,7 +287,7 @@ On Windows dual-boot machines:
 - Warn that adding a boot entry or changing ESP contents can trigger BitLocker recovery.
 - Follow the shipped dual-boot policy: tell users to turn BitLocker off in Windows and let the drive finish decrypting before installing (the configurator already enforces this; suspending alone proved insufficient — see #105).
 
-If the user chooses to make Omarchy first in boot order, capture the old `BootOrder` and provide rollback guidance.
+If the user chooses to make Collie first in boot order, capture the old `BootOrder` and provide rollback guidance.
 
 ## Security Model
 
@@ -295,7 +295,7 @@ Protected against:
 
 - Offline replacement of unsigned kernels on the ESP.
 - Offline modification of initramfs or kernel command line when UKI signature verification is enforced.
-- Accidental boot of unsigned Omarchy boot payloads in Secure Boot mode.
+- Accidental boot of unsigned Collie boot payloads in Secure Boot mode.
 
 Not protected against in v1:
 
@@ -322,7 +322,7 @@ Test matrix:
 3. Tampered live UKI fails to boot.
 4. Secure Boot install completes to empty disk.
 5. First installed boot enters MokManager enrollment flow.
-6. After MOK enrollment, installed Omarchy boots and prompts for LUKS unlock.
+6. After MOK enrollment, installed Collie boots and prompts for LUKS unlock.
 7. Tampered installed UKI fails to boot.
 8. Kernel update regenerates and signs a new UKI.
 9. Failed signing leaves previous UKI bootable.
@@ -338,11 +338,11 @@ Minimum hardware tests:
 2. Windows dual-boot install preserves Windows boot.
 3. BitLocker-decrypted install boots both OSes cleanly afterward.
 4. BitLocker-active install warning is visible before any disk mutation.
-5. Installed Omarchy boots only after MOK enrollment.
+5. Installed Collie boots only after MOK enrollment.
 6. Secure Boot remains enabled after install.
 7. Kernel update boots with newly signed UKI.
 8. Manually tampered UKI is rejected.
-9. Firmware boot order is preserved unless user opted to promote Omarchy.
+9. Firmware boot order is preserved unless user opted to promote Collie.
 
 ## Rollout Plan
 
@@ -373,7 +373,7 @@ Minimum hardware tests:
 
 ### Phase 4: Official Shim And Release Signing
 
-- Build Omarchy shim with SBAT metadata and embedded release cert.
+- Build Collie shim with SBAT metadata and embedded release cert.
 - Submit shim artifacts for Microsoft signing.
 - Integrate signed shim artifacts into official build pipeline.
 - Add release signing with HSM/offline key handling.
@@ -388,9 +388,9 @@ Minimum hardware tests:
 ## Acceptance Criteria
 
 - Official Secure Boot ISO boots on Microsoft Secure Boot hardware without disabling Secure Boot.
-- Secure Boot install does not ship or expose Omarchy release private keys.
-- Installed Omarchy boots through shim after MOK enrollment.
-- Installed Omarchy root remains LUKS-encrypted and passphrase-unlocked.
+- Secure Boot install does not ship or expose Collie release private keys.
+- Installed Collie boots through shim after MOK enrollment.
+- Installed Collie root remains LUKS-encrypted and passphrase-unlocked.
 - Kernel updates produce signed UKIs automatically.
 - Tampered UKIs fail to boot.
 - Windows ESP contents are preserved.

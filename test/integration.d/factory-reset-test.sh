@@ -1,14 +1,14 @@
 #!/bin/bash
 #
-# Factory reset on a shared ESP: proves omarchy-system-factory-reset hands a
-# machine on without destroying a dual-boot setup (basecamp/omarchy#6847).
+# Factory reset on a shared ESP: proves collie-system-factory-reset hands a
+# machine on without destroying a dual-boot setup (basecamp/collie#6847).
 # Dresses the installed ESP up as a dual-boot machine (Windows + a foreign
 # Linux, exactly what the reset must not destroy), runs a real factory reset,
 # and walks the first-boot setup that follows.
 #
 # Staging asserts the Windows and foreign Linux entries and their ESP payload
-# survive, the old Omarchy identity (entry + directory) is gone, and a fresh
-# Omarchy entry exists. First boot asserts provisioning completes, the machine
+# survive, the old Collie identity (entry + directory) is gone, and a fresh
+# Collie entry exists. First boot asserts provisioning completes, the machine
 # identity changed, and the foreign entries are still intact afterwards.
 
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
@@ -28,7 +28,7 @@ base_image_ready || { echo "No base image; run this through ./test/integration" 
 # --------------------------------------------------------------- esp fixture
 
 # Dress the ESP up as a shared dual-boot ESP: a Windows entry, and a second
-# Linux installation cloned from the real Omarchy entry so its shape is
+# Linux installation cloned from the real Collie entry so its shape is
 # exactly what limine-entry-tool writes, under a foreign machine-id with its
 # own boot directory and byte-identical UKIs (so the cloned entry hashes
 # stay valid).
@@ -41,11 +41,11 @@ fixture_shared_esp() {
     set -euo pipefail
     awk '/^\//{block=1} block' /boot/limine.conf |
       sed -e 's/$OLD_ID/$FOREIGN_ID/g' \
-          -e 's|/EFI/Linux/omarchy_|/EFI/Linux/foreign_|g' \
+          -e 's|/EFI/Linux/collie_|/EFI/Linux/foreign_|g' \
           -e 's|^/\(+\{0,1\}\)\([^/+]\)|/\1Foreign \2|' >/tmp/foreign-entries
     grep -q 'machine-id=$FOREIGN_ID' /tmp/foreign-entries
-    for uki in /boot/EFI/Linux/omarchy_*.efi; do
-      cp \"\$uki\" \"\${uki/omarchy_/foreign_}\"
+    for uki in /boot/EFI/Linux/collie_*.efi; do
+      cp \"\$uki\" \"\${uki/collie_/foreign_}\"
     done
     cat >>/boot/limine.conf <<'CONF'
 
@@ -81,7 +81,7 @@ start_reset() {
     rm -f /tmp/reset.in /tmp/reset.out
     mkfifo /tmp/reset.in
     setsid bash -c 'exec 3<>/tmp/reset.in && sleep 3600' >/dev/null 2>&1 &
-    setsid script -qefc 'stty rows 35 cols 130; sudo -S -p \"\" omarchy-system-factory-reset' /tmp/reset.out \
+    setsid script -qefc 'stty rows 35 cols 130; sudo -S -p \"\" collie-system-factory-reset' /tmp/reset.out \
       </tmp/reset.in >/dev/null 2>&1 &
   "
   sleep 2
@@ -131,7 +131,7 @@ reset_phase() {
 
   fixture_shared_esp
 
-  log "Running omarchy-system-factory-reset"
+  log "Running collie-system-factory-reset"
   start_reset
   wait_for_reset_output "Type 'reset' to continue" 60
   capture_console "success-reset-confirm"
@@ -162,15 +162,15 @@ reset_phase() {
     ssh_sudo "grep -q foreign-payload /boot/$FOREIGN_ID/marker"
   check "foreign UKI survives staging" \
     ssh_sudo "for u in $FOREIGN_UKIS; do test -f \$u || exit 1; done"
-  check "old omarchy entry is removed by staging" \
+  check "old collie entry is removed by staging" \
     ssh_sudo "! grep -q 'machine-id=$OLD_ID' /boot/limine.conf"
-  check "old omarchy boot directory is removed by staging" \
+  check "old collie boot directory is removed by staging" \
     ssh_sudo "! test -e /boot/$OLD_ID"
-  check "a fresh omarchy entry exists after staging" \
+  check "a fresh collie entry exists after staging" \
     ssh_sudo "grep -o 'machine-id=[0-9a-f]\{32\}' /boot/limine.conf | grep -qv 'machine-id=$FOREIGN_ID'"
 
   ssh_sudo "cat /boot/limine.conf" >"$RUN_DIR/limine.conf.staged" || true
-  ssh_sudo "cat /var/log/omarchy-system-factory-reset.log" >"$RUN_DIR/factory-reset.log" || true
+  ssh_sudo "cat /var/log/collie-system-factory-reset.log" >"$RUN_DIR/factory-reset.log" || true
   capture_console "success-reset-staged"
 
   # A reset that damaged the shared ESP is not rebooted into: what the first
@@ -201,15 +201,15 @@ drive_first_boot() {
   # The reset must leave a bootable default: the machine has to reach the
   # first-boot greeter on its own. A numeric default_entry pointing at a
   # moved entry parks Limine at the menu instead — catch that explicitly,
-  # then boot the Omarchy entry by hand so the rest of the flow still runs.
+  # then boot the Collie entry by hand so the rest of the flow still runs.
   if wait_for_screen "Linux by DHH" 120 2>/dev/null; then
     printf 'ok - %s\n' "the machine boots into first-boot setup unattended"
   else
-    if ocr_screen | grep -qi "Omarchy Bootloader"; then
+    if ocr_screen | grep -qi "Collie Bootloader"; then
       printf 'not ok - %s\n' "the machine boots into first-boot setup unattended (parked at the Limine menu)"
       ((FAILURES += 1))
       capture_console "failure-firstboot-parked-at-menu"
-      log "Selecting the Omarchy entry manually to continue the run"
+      log "Selecting the Collie entry manually to continue the run"
       press down; sleep 1; press down; sleep 1; press down; sleep 1
       press ret
       wait_for_screen "Linux by DHH" 600
@@ -277,7 +277,7 @@ first_boot_phase() {
   local waited=0 rc
   while true; do
     rc=0
-    ssh_guest "test -f /var/lib/omarchy/provisioning/pending" 2>/dev/null || rc=$?
+    ssh_guest "test -f /var/lib/collie/provisioning/pending" 2>/dev/null || rc=$?
     (( rc == 0 || rc == 255 )) || break
     if ((waited >= 900)); then
       capture_console "failure-provisioning-timeout"
@@ -292,7 +292,7 @@ first_boot_phase() {
   new_id=$(ssh_guest "cat /etc/machine-id" | tr -d '\r\n')
 
   check "provisioning completed on first boot" \
-    ssh_guest "! test -f /var/lib/omarchy/provisioning/pending"
+    ssh_guest "! test -f /var/lib/collie/provisioning/pending"
   # A well-formed identity, and not one we already know: an empty or echoed
   # ID would make the boot-entry grep below match the wrong entry.
   check "the reset minted a fresh machine identity" \
@@ -307,7 +307,7 @@ first_boot_phase() {
     ssh_sudo "grep -q foreign-payload /boot/$FOREIGN_ID/marker"
   check "foreign UKI survives the first boot" \
     ssh_sudo "for u in $FOREIGN_UKIS; do test -f \$u || exit 1; done"
-  check "old omarchy identity never returns" \
+  check "old collie identity never returns" \
     ssh_sudo "! grep -q 'machine-id=$OLD_ID' /boot/limine.conf"
   check "the new identity owns a boot entry" \
     ssh_sudo "grep -q 'machine-id=$new_id' /boot/limine.conf"

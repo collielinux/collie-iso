@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# The aarch64 UEFI firmware lookup that bin/omarchy-iso-boot and the arm64
+# The aarch64 UEFI firmware lookup that bin/collie-iso-boot and the arm64
 # boot tests share, run against the file layouts the packages ship.
 
 set -euo pipefail
@@ -47,8 +47,8 @@ aarch64_uefi_firmware "$fixture/empty" && fail "an empty directory has firmware"
 
 # The launcher and both boot tests take their firmware from this lookup and
 # name none of their own.
-for caller in bin/omarchy-iso-boot test/arm64-live-boot test/arm64-install; do
+for caller in bin/collie-iso-boot test/arm64-live-boot test/arm64-install; do
   grep -Fq 'lib/aarch64-firmware.sh' "$ROOT/$caller" || fail "$caller does not use the shared firmware lookup"
   grep -Eq 'QEMU_(EFI|CODE|VARS)\.fd|AAVMF_(CODE|VARS)\.fd' "$ROOT/$caller" && fail "$caller names aarch64 firmware of its own"
 done
-bash -n "$ROOT/bin/lib/aarch64-firmware.sh" "$ROOT/bin/omarchy-iso-boot" "$ROOT/test/arm64-live-boot" "$ROOT/test/arm64-install"
+bash -n "$ROOT/bin/lib/aarch64-firmware.sh" "$ROOT/bin/collie-iso-boot" "$ROOT/test/arm64-live-boot" "$ROOT/test/arm64-install"

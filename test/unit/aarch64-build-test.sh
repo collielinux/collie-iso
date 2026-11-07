@@ -9,7 +9,7 @@ set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 fixture=$(mktemp -d)
-trap 'rm -rf "$fixture" /tmp/omarchy-aarch64-base.packages' EXIT
+trap 'rm -rf "$fixture" /tmp/collie-aarch64-base.packages' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -24,33 +24,33 @@ have_archiso() {
 }
 
 # --- entrypoint argument contract -------------------------------------------
-bash -n "$ROOT/bin/omarchy-iso-make" "$ROOT/builder/build-iso.sh" \
+bash -n "$ROOT/bin/collie-iso-make" "$ROOT/builder/build-iso.sh" \
   "$ROOT/builder/aarch64-package-filter.sh" "$ROOT/builder/qcom-oem-firmware.sh" "$ROOT/builder/grub-platform.sh" \
   "$ROOT/builder/archiso-aarch64-mkinitcpio.sh" "$ROOT/builder/archiso-aarch64-grub-modules.sh" \
   "$ROOT/builder/node-release.sh" "$ROOT/builder/arm64-kernel-image.sh" \
-  "$ROOT/builder/n1x-dev-ssh/omarchy-n1x-dev-ssh" "$ROOT/configs/airootfs/root/.automated_script.sh"
+  "$ROOT/builder/n1x-dev-ssh/collie-n1x-dev-ssh" "$ROOT/configs/airootfs/root/.automated_script.sh"
 
-grep -Eq '^ *CONTAINER_IMAGE=ghcr\.io/menci/archlinuxarm@sha256:[0-9a-f]{64}$' "$ROOT/bin/omarchy-iso-make" || fail "aarch64 container is not pinned by digest on ghcr.io"
-grep -Eq 'requires? (--package-dir DIR|the package bundle)' "$ROOT/bin/omarchy-iso-make" "$ROOT/builder/build-iso.sh" \
+grep -Eq '^ *CONTAINER_IMAGE=ghcr\.io/menci/archlinuxarm@sha256:[0-9a-f]{64}$' "$ROOT/bin/collie-iso-make" || fail "aarch64 container is not pinned by digest on ghcr.io"
+grep -Eq 'requires? (--package-dir DIR|the package bundle)' "$ROOT/bin/collie-iso-make" "$ROOT/builder/build-iso.sh" \
   && fail "an aarch64 build still requires a package bundle, though edge publishes linux-omarchy"
 grep -Fq 'ships no $required' "$ROOT/builder/build-iso.sh" || fail "a runtime without the platform support is not refused"
-for required in bin/omarchy-hw-platform install/hardware/qualcomm/dtb-uki.sh install/omarchy-aarch64-qualcomm.packages \
-  install/omarchy-aarch64-n1x.packages install/omarchy-aarch64-gb10.packages; do
+for required in bin/collie-hw-platform install/hardware/qualcomm/dtb-uki.sh install/collie-aarch64-qualcomm.packages \
+  install/collie-aarch64-n1x.packages install/collie-aarch64-gb10.packages; do
   sed -n '/^  for required in /,/; do$/p' "$ROOT/builder/build-iso.sh" | grep -Fq -- "$required" \
     || fail "a runtime without $required is not refused"
 done
-grep -Fq 'sha256sum --check --strict --quiet SHA256SUMS' "$ROOT/bin/omarchy-iso-make" || fail "bundle checksums are not verified on the host"
-grep -Fq -- '-v "$PACKAGE_DIR:/packages:ro"' "$ROOT/bin/omarchy-iso-make" || fail "bundle is not mounted read-only at /packages"
-grep -Fq 'OMARCHY_ARCH == x86_64 && -d /var/cache/pacman/pkg' "$ROOT/bin/omarchy-iso-make" || fail "host pacman cache would leak into aarch64 builds"
+grep -Fq 'sha256sum --check --strict --quiet SHA256SUMS' "$ROOT/bin/collie-iso-make" || fail "bundle checksums are not verified on the host"
+grep -Fq -- '-v "$PACKAGE_DIR:/packages:ro"' "$ROOT/bin/collie-iso-make" || fail "bundle is not mounted read-only at /packages"
+grep -Fq 'COLLIE_ARCH == x86_64 && -d /var/cache/pacman/pkg' "$ROOT/bin/collie-iso-make" || fail "host pacman cache would leak into aarch64 builds"
 grep -Fq 'aarch64 builds use the stable, rc or edge channel' "$ROOT/builder/build-iso.sh" || fail "an aarch64 build accepts a channel it has no config for"
-grep -Fq 'OMARCHY_KERNEL=linux-omarchy' "$ROOT/bin/omarchy-iso-make" || fail "an aarch64 image does not boot linux-omarchy"
-grep -Fq -- '--kernel' "$ROOT/bin/omarchy-iso-make" && fail "an aarch64 build still offers a choice of kernel"
-grep -Fq 'OMARCHY_ARM_PLATFORM' "$ROOT/bin/omarchy-iso-make" "$ROOT/builder/build-iso.sh" && fail "an aarch64 build still asks which board it is for"
-grep -Fq "ALL_kver='/boot/vmlinuz-linux-omarchy'" "$ROOT/builder/linux-omarchy.preset" || fail "the live preset does not boot linux-omarchy"
-grep -Fq 'echo "$OMARCHY_KERNEL" > "$build_cache_dir/airootfs/root/omarchy_kernel"' "$ROOT/builder/build-iso.sh" || fail "the installer is not told which kernel to install"
+grep -Fq 'COLLIE_KERNEL=linux-omarchy' "$ROOT/bin/collie-iso-make" || fail "an aarch64 image does not boot linux-omarchy"
+grep -Fq -- '--kernel' "$ROOT/bin/collie-iso-make" && fail "an aarch64 build still offers a choice of kernel"
+grep -Fq 'COLLIE_ARM_PLATFORM' "$ROOT/bin/collie-iso-make" "$ROOT/builder/build-iso.sh" && fail "an aarch64 build still asks which board it is for"
+grep -Fq "ALL_kver='/boot/vmlinuz-linux-omarchy'" "$ROOT/builder/linux-collie.preset" || fail "the live preset does not boot linux-omarchy"
+grep -Fq 'echo "$COLLIE_KERNEL" > "$build_cache_dir/airootfs/root/collie_kernel"' "$ROOT/builder/build-iso.sh" || fail "the installer is not told which kernel to install"
 
 # --- builder wiring -----------------------------------------------------------
-grep -Fq 'online_pacman_conf="/configs/pacman-online-aarch64-${OMARCHY_MIRROR}.conf"' "$ROOT/builder/build-iso.sh" || fail "aarch64 does not use its own online pacman config for the channel"
+grep -Fq 'online_pacman_conf="/configs/pacman-online-aarch64-${COLLIE_MIRROR}.conf"' "$ROOT/builder/build-iso.sh" || fail "aarch64 does not use its own online pacman config for the channel"
 if grep -Fq -- '--config "/configs/pacman-online-' "$ROOT/builder/build-iso.sh"; then
   fail "a pacman call still hardcodes the x86 mirror config"
 fi
@@ -60,7 +60,7 @@ grep -Fq 'boot_splash_kernel_options="quiet splash "' "$ROOT/builder/build-iso.s
 grep -Fq 'plymouth.enable=0 console=tty0' "$ROOT/builder/build-iso.sh" && fail "aarch64 live boot still turns Plymouth off"
 grep -Fq '"$mkarchiso_command" -v -w' "$ROOT/builder/build-iso.sh" || fail "builder does not use the patched mkarchiso on aarch64"
 # pacman takes the first repository carrying a name: the platform bundle, then
-# Omarchy's aarch64 repo, then Arch Linux ARM. Each channel's config is edge's
+# Collie's aarch64 repo, then Arch Linux ARM. Each channel's config is edge's
 # with that channel's [omarchy] repo and Arch Linux ARM mirror, as x86_64's
 # pacman-online-<channel>.conf are.
 for channel in stable rc edge; do
@@ -76,7 +76,7 @@ for channel in stable rc edge; do
 done
 grep -Fq 'sed -i "s|^Server = https://pkgs' "$ROOT/builder/build-iso.sh" && fail "an aarch64 build still rewrites its [omarchy] server"
 grep -Fq 'repo-add -q "$bundle_index/platform.db.tar.gz"' "$ROOT/builder/build-iso.sh" || fail "bundle is not indexed as the [platform] repo"
-grep -Fq 'arch="${OMARCHY_ARCH:-x86_64}"' "$ROOT/configs/profiledef.sh" || fail "profiledef ignores OMARCHY_ARCH"
+grep -Fq 'arch="${COLLIE_ARCH:-x86_64}"' "$ROOT/configs/profiledef.sh" || fail "profiledef ignores COLLIE_ARCH"
 # The live initramfs size gate looks where mkarchiso puts it for the build's
 # architecture: <install_dir>/boot/<arch>. The builder's own gate, run on a
 # small and an oversized initramfs for each architecture.
@@ -84,12 +84,12 @@ initramfs_gate=$(sed -n '/^live_initramfs_limit=/,/^done$/p' "$ROOT/builder/buil
 [[ -n $initramfs_gate ]] || fail "the builder no longer gates the live initramfs size"
 for platform in x86_64 aarch64; do
   mkdir -p "$fixture/gate-$platform/work/iso/arch/boot/$platform"
-  live_img="$fixture/gate-$platform/work/iso/arch/boot/$platform/initramfs-linux-omarchy.img"
+  live_img="$fixture/gate-$platform/work/iso/arch/boot/$platform/initramfs-linux-collie.img"
   truncate -s 96M "$live_img"
-  (build_cache_dir="$fixture/gate-$platform" iso_subdir=arch/$platform OMARCHY_ARCH=$platform; eval "$initramfs_gate") >/dev/null 2>&1 \
+  (build_cache_dir="$fixture/gate-$platform" iso_subdir=arch/$platform COLLIE_ARCH=$platform; eval "$initramfs_gate") >/dev/null 2>&1 \
     || fail "the live initramfs size gate does not find the $platform initramfs"
   truncate -s 129M "$live_img"
-  (build_cache_dir="$fixture/gate-$platform" iso_subdir=arch/$platform OMARCHY_ARCH=$platform; eval "$initramfs_gate") >/dev/null 2>&1 \
+  (build_cache_dir="$fixture/gate-$platform" iso_subdir=arch/$platform COLLIE_ARCH=$platform; eval "$initramfs_gate") >/dev/null 2>&1 \
     && fail "a 129 MiB $platform live initramfs passes the 128 MiB gate"
 done
 
@@ -101,7 +101,7 @@ for cfg in grub.cfg loopback.cfg; do
   grep -Fq "if [ \"\${sys_vendor}\" == 'Apple Inc.' ]; then" "$src" || fail "$cfg boots linux-t2 on a machine Apple did not make"
   grep -Fq '%BOOT_SPLASH_KERNEL_OPTIONS%%KERNEL_OPTIONS%' "$src" || fail "$cfg does not template boot options"
   grep -Fq -- "--id 'n1x-recovery'" "$src" || fail "$cfg lacks the N1x recovery entry"
-  grep -Fq 'omarchy.n1x_recovery=1 acpi=nospcr' "$src" || fail "$cfg recovery entry lacks acpi=nospcr"
+  grep -Fq 'collie.n1x_recovery=1 acpi=nospcr' "$src" || fail "$cfg recovery entry lacks acpi=nospcr"
   source "$ROOT/builder/grub-platform.sh"
   for platform in x86_64 aarch64; do
     cp "$src" "$fixture/$platform-$cfg"
@@ -118,7 +118,7 @@ for cfg in grub.cfg loopback.cfg; do
       # the ISO and drops to a shell.
       grep -Eq 'live_kernel|linux-t2|sys_vendor' "$fixture/$platform-$cfg" && fail "the aarch64 $cfg still chooses a Mac kernel"
       grep -Eq '^\s*initrd\s' "$fixture/$platform-$cfg" || fail "the aarch64 $cfg loads no initramfs"
-      grep -E '^\s*initrd\s' "$fixture/$platform-$cfg" | grep -Fv 'initrd /arch/boot/aarch64/initramfs-linux-omarchy.img' \
+      grep -E '^\s*initrd\s' "$fixture/$platform-$cfg" | grep -Fv 'initrd /arch/boot/aarch64/initramfs-linux-collie.img' \
         && fail "an aarch64 $cfg entry loads an initramfs Ventoy can't find by name"
     else
       grep -Fq 'n1x-recovery' "$fixture/$platform-$cfg" && fail "recovery entry leaked into the $platform $cfg"
@@ -166,11 +166,11 @@ result=$(filter_aarch64_packages linux-omarchy linux linux-headers linux-omarchy
 result=$(filter_aarch64_packages linux-omarchy linux-omarchy linux-omarchy-headers 2>/dev/null | paste -sd' ')
 [[ $result == "linux-omarchy linux-omarchy-headers" ]] || fail "linux-omarchy lost its name on its own image: $result"
 
-grep -Fq -- '-e "OMARCHY_RUNTIME_PACKAGE=${OMARCHY_RUNTIME_PACKAGE:-}"' "$ROOT/bin/omarchy-iso-make" \
-  || fail "the Omarchy package pair cannot be overridden for a --local-source build"
+grep -Fq -- '-e "COLLIE_RUNTIME_PACKAGE=${COLLIE_RUNTIME_PACKAGE:-}"' "$ROOT/bin/collie-iso-make" \
+  || fail "the Collie package pair cannot be overridden for a --local-source build"
 
 # --- N1x packages ----------------------------------------------------------------
-grep -Fq 'OMARCHY_PLATFORM' "$ROOT/builder/build-omarchy-packages.sh" \
+grep -Fq 'COLLIE_PLATFORM' "$ROOT/builder/build-collie-packages.sh" \
   && fail "the local package build still passes a platform no recipe reads"
 grep -Fq 'lacks $required, which an aarch64 install needs' "$ROOT/builder/build-iso.sh" \
   || fail "aarch64 builds do not verify the settings package keeps the Limine drop-ins"
@@ -206,7 +206,7 @@ lookup=$(sed -n '/^if ! installable_files="\$($/,/^fi$/p' "$ROOT/builder/build-i
 lookup=${lookup//\/tmp\/offlinedb/$fixture/offlinedb}
 lookup=${lookup//\/configs\//$ROOT/configs/}
 installable=$(
-  OMARCHY_ARCH=aarch64 OMARCHY_MIRROR=edge
+  COLLIE_ARCH=aarch64 COLLIE_MIRROR=edge
   online_pacman_conf=$ROOT/configs/pacman-online-aarch64-edge.conf
   target_packages=(bundle-only alarm-only)
   eval "$lookup" 2>/dev/null
@@ -215,7 +215,7 @@ installable=$(
 [[ $installable == 'alarm-only-1.0-1-aarch64.pkg.tar.zst bundle-only-1.0-1-aarch64.pkg.tar.zst' ]] \
   || fail "an aarch64 build looks up what it ships in other repositories than it downloaded from: '$installable'"
 
-# The boot-time mirror check (omarchy-mirror-verify.service) runs the
+# The boot-time mirror check (collie-mirror-verify.service) runs the
 # builder's checksum list before anything formats a disk. validate_boot reads
 # archlinuxarm-keyring's signature off the shipped mirror after the image is
 # written, so a damaged signature has to fail that check, not the finished
@@ -224,18 +224,18 @@ installable=$(
 sums_block=$(sed -n '/^mirror_files() {/,/sha256sum) >"\$mirror_sums"$/p' "$ROOT/builder/build-iso.sh")
 [[ -n $sums_block ]] || fail "the builder no longer checksums the shipped mirror"
 shipped_mirror=$fixture/shipped-mirror
-mkdir -p "$shipped_mirror" "$fixture/sums-cache/airootfs/usr/share/omarchy-iso"
+mkdir -p "$shipped_mirror" "$fixture/sums-cache/airootfs/usr/share/collie-iso"
 for file in archlinuxarm-keyring-20240419-1-any.pkg.tar.xz{,.sig} linux-firmware-1-1-any.pkg.tar.zst{,.sig} \
-  omarchy-local-1-1-any.pkg.tar.zst offline.db.tar.gz; do
+  collie-local-1-1-any.pkg.tar.zst offline.db.tar.gz; do
   echo "$file" >"$shipped_mirror/$file"
 done
 printf '%s\n' archlinuxarm-keyring-20240419-1-any.pkg.tar.xz linux-firmware-1-1-any.pkg.tar.zst \
-  omarchy-local-1-1-any.pkg.tar.zst >"$fixture/shipped.list"
+  collie-local-1-1-any.pkg.tar.zst >"$fixture/shipped.list"
 (
   offline_mirror_dir=$shipped_mirror shipped_list=$fixture/shipped.list build_cache_dir=$fixture/sums-cache
   eval "$sums_block"
 ) || fail "the builder's mirror checksum list did not run"
-shipped_sums=$fixture/sums-cache/airootfs/usr/share/omarchy-iso/offline-mirror.sha256
+shipped_sums=$fixture/sums-cache/airootfs/usr/share/collie-iso/offline-mirror.sha256
 (cd "$shipped_mirror" && sha256sum --check --strict --quiet "$shipped_sums") \
   || fail "an intact shipped mirror fails its own checksums"
 echo damaged >>"$shipped_mirror/archlinuxarm-keyring-20240419-1-any.pkg.tar.xz.sig"
@@ -259,8 +259,8 @@ stripped=$(awk "$strip" "$ROOT/configs/pacman-online-aarch64-stable.conf" | grep
 # The entrypoint's contract, checked by running it up to its first refusal.
 make_refuses() { # expected message, then arguments
   local want=$1 out; shift
-  out=$(cd "$ROOT" && bash bin/omarchy-iso-make "$@" 2>&1) && fail "omarchy-iso-make $* was accepted"
-  grep -Fq -- "$want" <<<"$out" || fail "omarchy-iso-make $*: expected '$want', got: $out"
+  out=$(cd "$ROOT" && bash bin/collie-iso-make "$@" 2>&1) && fail "collie-iso-make $* was accepted"
+  grep -Fq -- "$want" <<<"$out" || fail "collie-iso-make $*: expected '$want', got: $out"
 }
 make_refuses 'package directory not found' --arch aarch64 --rc --package-dir /nonexistent
 make_refuses 'package directory not found' --arch aarch64 --edge --package-dir /nonexistent
@@ -282,7 +282,7 @@ insert_uki=$(sed -n '/^  customize="\$build_cache_dir\/airootfs\/root\/customize
 mkdir -p "$fixture/cache/airootfs/root"
 live_customize="$fixture/cache/airootfs/root/customize_airootfs.sh"
 cp "$ROOT/configs/airootfs/root/customize_airootfs.sh" "$live_customize"
-(build_cache_dir="$fixture/cache" OMARCHY_KERNEL=linux-omarchy; eval "$insert_uki") || fail "the live UKI step does not go into customize_airootfs.sh"
+(build_cache_dir="$fixture/cache" COLLIE_KERNEL=linux-omarchy; eval "$insert_uki") || fail "the live UKI step does not go into customize_airootfs.sh"
 bash -n "$live_customize" || fail "customize_airootfs.sh is not valid bash with the live UKI step"
 uki_line=$(grep -nx 'bash /root/qualcomm-live-uki.sh linux-omarchy' "$live_customize" | cut -d: -f1 || true)
 [[ -n $uki_line ]] || fail "the live UKI is not told which kernel to wrap"
@@ -296,7 +296,7 @@ first_exit=$(grep -nE '^[^#]*\bexit\b' "$live_customize" | head -1 | cut -d: -f1
 diff <(sed '/live UKI\.$/d; /qualcomm-live-uki\.sh/d' "$live_customize" | cat -s) <(cat -s "$ROOT/configs/airootfs/root/customize_airootfs.sh") >/dev/null \
   || fail "adding the live UKI step changed the rest of customize_airootfs.sh"
 printf '#!/bin/bash\necho no strict mode\n' >"$live_customize"
-(build_cache_dir="$fixture/cache" OMARCHY_KERNEL=linux-omarchy; eval "$insert_uki") 2>/dev/null \
+(build_cache_dir="$fixture/cache" COLLIE_KERNEL=linux-omarchy; eval "$insert_uki") 2>/dev/null \
   && fail "the live UKI step was added to a customize_airootfs.sh without set -euo pipefail"
 grep -Fq -- '--devicetree-auto=$dtb' "$uki" || fail "the live UKI carries no device trees"
 grep -Fq '*-el2.dtb' "$uki" || fail "EL2 device trees, which share hardware ids with their base trees, are not left out"
@@ -305,11 +305,11 @@ if [[ ! -d /boot/dtbs/linux-omarchy/qcom ]]; then
   out=$(bash "$uki" linux-omarchy) || fail "a kernel without Snapdragon device trees stops the build"
   grep -Fq 'ships no Windows-on-ARM device trees' <<<"$out" || fail "a missing live UKI is not explained: $out"
 fi
-grep -Fq "chainloader /%INSTALL_DIR%/boot/%ARCH%/omarchy-live.efi" "$ROOT/configs/grub/grub.cfg" || fail "GRUB does not chainload the live UKI"
-grep -F 'chainloader /%INSTALL_DIR%/boot/%ARCH%/omarchy-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq 'omarchy.qcom_early=1' || fail "the live UKI does not enable early Qualcomm startup"
-grep -F 'chainloader /%INSTALL_DIR%/boot/%ARCH%/omarchy-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq 'modprobe.blacklist=qcom_q6v5_pas' || fail "the live UKI must protect the legacy path from automatic DSP startup"
-grep -F 'omarchy-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq ' iommu.passthrough=0 ' || fail "the live UKI entry leaves device memory access untranslated"
-grep -F 'chainloader /%INSTALL_DIR%/boot/%ARCH%/omarchy-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq '%BOOT_SPLASH_KERNEL_OPTIONS%%KERNEL_OPTIONS%' || fail "the live UKI entry does not pin the panel console"
+grep -Fq "chainloader /%INSTALL_DIR%/boot/%ARCH%/collie-live.efi" "$ROOT/configs/grub/grub.cfg" || fail "GRUB does not chainload the live UKI"
+grep -F 'chainloader /%INSTALL_DIR%/boot/%ARCH%/collie-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq 'collie.qcom_early=1' || fail "the live UKI does not enable early Qualcomm startup"
+grep -F 'chainloader /%INSTALL_DIR%/boot/%ARCH%/collie-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq 'modprobe.blacklist=qcom_q6v5_pas' || fail "the live UKI must protect the legacy path from automatic DSP startup"
+grep -F 'collie-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq ' iommu.passthrough=0 ' || fail "the live UKI entry leaves device memory access untranslated"
+grep -F 'chainloader /%INSTALL_DIR%/boot/%ARCH%/collie-live.efi' "$ROOT/configs/grub/grub.cfg" | grep -Fq '%BOOT_SPLASH_KERNEL_OPTIONS%%KERNEL_OPTIONS%' || fail "the live UKI entry does not pin the panel console"
 grep -Fqx 'dtb_dir=/boot/dtbs/$1/qcom' "$uki" || fail "the live UKI does not take the device trees the kernel keeps under its own name"
 # mkarchiso copies the UKI onto the ISO only with this patch, applied after the GRUB one.
 if have_archiso; then
@@ -323,93 +323,93 @@ fi
 grep -Fq 'patch --batch --forward --fuzz=0 "$mkarchiso_command" </builder/archiso-v87-aarch64-boot-efi.patch' "$ROOT/builder/build-iso.sh" \
   || fail "aarch64 builds do not patch mkarchiso to copy the live UKI"
 # The installer asks the runtime's own detector which board it is on.
-grep -Fq 'install -Dm0644 "$hw_platform" "$build_cache_dir/airootfs/usr/share/omarchy-iso/omarchy-hw-platform"' "$ROOT/builder/build-iso.sh" \
+grep -Fq 'install -Dm0644 "$hw_platform" "$build_cache_dir/airootfs/usr/share/collie-iso/collie-hw-platform"' "$ROOT/builder/build-iso.sh" \
   || fail "the image does not carry the runtime's platform detector"
-# A packaged runtime links /usr/share/omarchy/bin/* to /usr/bin, so the link
+# A packaged runtime links /usr/share/collie/bin/* to /usr/bin, so the link
 # extracted on its own points nowhere.
-grep -Fq 'hw_platform=/tmp/omarchy-pkglists/usr/bin/omarchy-hw-platform' "$ROOT/builder/build-iso.sh" \
+grep -Fq 'hw_platform=/tmp/collie-pkglists/usr/bin/collie-hw-platform' "$ROOT/builder/build-iso.sh" \
   || fail "a build from published packages reads the detector through its link"
 
 # --- package sources ---------------------------------------------------------------
-# Arch Linux ARM's packages come from Omarchy's own mirror of them: for the
+# Arch Linux ARM's packages come from Collie's own mirror of them: for the
 # offline mirror, for the build container, and for the installed system.
 servers=$(cat "$ROOT"/configs/pacman-online-aarch64-*.conf | grep -E '^Server' | grep -v 'file:///packages' | sort -u)
-grep -vq 'omarchy\.org/' <<<"$servers" && fail "an aarch64 build downloads from outside Omarchy: $(grep -v 'omarchy\.org/' <<<"$servers")"
-grep -Fq 'Server = https://arm-mirror.omarchy.org/$arch/$repo' <<<"$servers" || fail "aarch64 builds do not use Omarchy's Arch Linux ARM mirror"
+grep -vq 'collie\.org/' <<<"$servers" && fail "an aarch64 build downloads from outside Collie: $(grep -v 'collie\.org/' <<<"$servers")"
+grep -Fq 'Server = https://arm-mirror.omarchy.org/$arch/$repo' <<<"$servers" || fail "aarch64 builds do not use Collie's Arch Linux ARM mirror"
 grep -Fq '>/etc/pacman.d/mirrorlist' "$ROOT/builder/build-iso.sh" || fail "the build container keeps the mirror its image came with"
 grep -Fq '{"url": "https://arm-mirror.omarchy.org/$arch/$repo"}' "$ROOT/configs/airootfs/root/configurator" \
-  || fail "an installed aarch64 system is not pointed at Omarchy's mirror"
+  || fail "an installed aarch64 system is not pointed at Collie's mirror"
 if grep -rn 'mirror\.archlinuxarm\.org' "$ROOT/bin" "$ROOT/builder" "$ROOT/configs" >/dev/null; then
   fail "something still names Arch Linux ARM's own mirror"
 fi
 
 # --- recovery entry --------------------------------------------------------------
-grep -Fq "grep -qw 'omarchy.n1x_recovery=1' /proc/cmdline" "$ROOT/configs/airootfs/root/.automated_script.sh" \
+grep -Fq "grep -qw 'collie.n1x_recovery=1' /proc/cmdline" "$ROOT/configs/airootfs/root/.automated_script.sh" \
   || fail "the N1x recovery entry would start the installer"
 
 # --- DEV ONLY: N1x debug SSH -------------------------------------------------------
-dev_ssh="$ROOT/builder/n1x-dev-ssh/omarchy-n1x-dev-ssh"
-grep -Fq 'install -Dm0755 /builder/n1x-dev-ssh/omarchy-n1x-dev-ssh' "$ROOT/builder/build-iso.sh" || fail "--dev-ssh builds do not stage the dev SSH script"
+dev_ssh="$ROOT/builder/n1x-dev-ssh/collie-n1x-dev-ssh"
+grep -Fq 'install -Dm0755 /builder/n1x-dev-ssh/collie-n1x-dev-ssh' "$ROOT/builder/build-iso.sh" || fail "--dev-ssh builds do not stage the dev SSH script"
 # The dev key is opt-in: only the --dev-ssh flag stages it.
-dev_block=$(awk '/^if \[\[ -n \$\{OMARCHY_N1X_DEV_SSH:-\} \]\]; then$/,/^fi$/' "$ROOT/builder/build-iso.sh")
-grep -Fq 'n1x-dev-ssh' <<<"$dev_block" || fail "dev SSH staging is not gated on OMARCHY_N1X_DEV_SSH"
+dev_block=$(awk '/^if \[\[ -n \$\{COLLIE_N1X_DEV_SSH:-\} \]\]; then$/,/^fi$/' "$ROOT/builder/build-iso.sh")
+grep -Fq 'n1x-dev-ssh' <<<"$dev_block" || fail "dev SSH staging is not gated on COLLIE_N1X_DEV_SSH"
 [[ $(grep -c 'n1x-dev-ssh/' "$ROOT/builder/build-iso.sh") == $(grep -c 'n1x-dev-ssh/' <<<"$dev_block") ]] \
   || fail "dev SSH files are staged outside the --dev-ssh block"
-grep -Fq -- '-e "OMARCHY_N1X_DEV_SSH=${N1X_DEV_SSH_KEY:+1}"' "$ROOT/bin/omarchy-iso-make" || fail "--dev-ssh does not reach the build container"
-grep -Fq -- '-v "$N1X_DEV_SSH_KEY:/dev-ssh/authorized_keys:ro"' "$ROOT/bin/omarchy-iso-make" || fail "--dev-ssh does not hand the builder's key to the build"
-grep -Fq -- '${N1X_DEV_SSH_KEY:+-devssh}' "$ROOT/bin/omarchy-iso-make" || fail "dev images are not named apart from normal ones"
-grep -Fq 'file_permissions["/usr/local/sbin/omarchy-n1x-dev-ssh"]="0:0:755"' "$ROOT/builder/build-iso.sh" || fail "dev SSH script would lose its exec bit"
-grep -Fq 'multi-user.target.wants/omarchy-n1x-dev-ssh.service' "$ROOT/builder/build-iso.sh" || fail "dev SSH unit is not enabled on the live ISO"
+grep -Fq -- '-e "COLLIE_N1X_DEV_SSH=${N1X_DEV_SSH_KEY:+1}"' "$ROOT/bin/collie-iso-make" || fail "--dev-ssh does not reach the build container"
+grep -Fq -- '-v "$N1X_DEV_SSH_KEY:/dev-ssh/authorized_keys:ro"' "$ROOT/bin/collie-iso-make" || fail "--dev-ssh does not hand the builder's key to the build"
+grep -Fq -- '${N1X_DEV_SSH_KEY:+-devssh}' "$ROOT/bin/collie-iso-make" || fail "dev images are not named apart from normal ones"
+grep -Fq 'file_permissions["/usr/local/sbin/collie-n1x-dev-ssh"]="0:0:755"' "$ROOT/builder/build-iso.sh" || fail "dev SSH script would lose its exec bit"
+grep -Fq 'multi-user.target.wants/collie-n1x-dev-ssh.service' "$ROOT/builder/build-iso.sh" || fail "dev SSH unit is not enabled on the live ISO"
 [[ ! -e $ROOT/builder/n1x-dev-ssh/authorized_keys ]] || fail "a dev SSH key is baked into the sources"
-ssh-keygen -q -t ed25519 -N '' -C omarchy-iso-test -f "$fixture/devkey"
+ssh-keygen -q -t ed25519 -N '' -C collie-iso-test -f "$fixture/devkey"
 mkdir -p "$fixture/target/etc"
 for run in 1 2; do
-  OMARCHY_N1X_DEV_SSH_KEYS="$fixture/devkey.pub" bash "$dev_ssh" --target "$fixture/target" \
+  COLLIE_N1X_DEV_SSH_KEYS="$fixture/devkey.pub" bash "$dev_ssh" --target "$fixture/target" \
     || fail "dev SSH --target run $run failed"
 done
 [[ $(stat -c %a "$fixture/target/root/.ssh") == 700 && $(stat -c %a "$fixture/target/root/.ssh/authorized_keys") == 600 ]] \
   || fail "dev SSH wrote loose permissions"
 cmp -s "$fixture/target/root/.ssh/authorized_keys" "$fixture/devkey.pub" || fail "dev SSH key is not authorized exactly once for root"
-grep -Fqx 'PasswordAuthentication no' "$fixture/target/etc/ssh/sshd_config.d/05-omarchy-n1x-dev-ssh.conf" || fail "dev SSH leaves password login on"
-grep -Fqx 'PermitRootLogin prohibit-password' "$fixture/target/etc/ssh/sshd_config.d/05-omarchy-n1x-dev-ssh.conf" || fail "dev SSH root login is not key-only"
+grep -Fqx 'PasswordAuthentication no' "$fixture/target/etc/ssh/sshd_config.d/05-collie-n1x-dev-ssh.conf" || fail "dev SSH leaves password login on"
+grep -Fqx 'PermitRootLogin prohibit-password' "$fixture/target/etc/ssh/sshd_config.d/05-collie-n1x-dev-ssh.conf" || fail "dev SSH root login is not key-only"
 [[ ! -e $fixture/target/root/authorized_keys ]] || fail "--target must not stage installer keys"
 # sshd keeps the first value it reads; the drop-in must sort before releng's.
 for dropin in "$ROOT"/archiso/configs/releng/airootfs/etc/ssh/sshd_config.d/*.conf; do
   [[ -e $dropin ]] || continue
-  [[ 05-omarchy-n1x-dev-ssh.conf < ${dropin##*/} ]] || fail "dev SSH drop-in sorts after releng's ${dropin##*/}"
+  [[ 05-collie-n1x-dev-ssh.conf < ${dropin##*/} ]] || fail "dev SSH drop-in sorts after releng's ${dropin##*/}"
 done
 bash "$dev_ssh" --target "$fixture/missing" 2>/dev/null && fail "dev SSH accepted a target that is not a root filesystem"
 
 # --- default package set -----------------------------------------------------
-# aarch64 composes the runtime's default sets the way omarchy-pkg-defaults does:
+# aarch64 composes the runtime's default sets the way collie-pkg-defaults does:
 # the plain one, and one for each platform the installer may find itself on.
 mkdir -p "$fixture/lists"
-printf '%s\n' '# base' base-one gliff superwhisper-bin base-two >"$fixture/lists/omarchy-base.packages"
-printf '%s\n' '# aarch64' zram-generator rtkit base-one >"$fixture/lists/omarchy-aarch64.packages"
-printf '%s\n' '# x86_64 only' gliff superwhisper-bin >"$fixture/lists/omarchy-x86_64-only.packages"
-printf '%s\n' '# n1x' linux-omarchy rtkit >"$fixture/lists/omarchy-aarch64-n1x.packages"
-printf '%s\n' '# qualcomm' vulkan-freedreno >"$fixture/lists/omarchy-aarch64-qualcomm.packages"
-printf '%s\n' '# apple' asahi-audio >"$fixture/lists/omarchy-aarch64-apple.packages"
+printf '%s\n' '# base' base-one gliff superwhisper-bin base-two >"$fixture/lists/collie-base.packages"
+printf '%s\n' '# aarch64' zram-generator rtkit base-one >"$fixture/lists/collie-aarch64.packages"
+printf '%s\n' '# x86_64 only' gliff superwhisper-bin >"$fixture/lists/collie-x86_64-only.packages"
+printf '%s\n' '# n1x' linux-omarchy rtkit >"$fixture/lists/collie-aarch64-n1x.packages"
+printf '%s\n' '# qualcomm' vulkan-freedreno >"$fixture/lists/collie-aarch64-qualcomm.packages"
+printf '%s\n' '# apple' asahi-audio >"$fixture/lists/collie-aarch64-apple.packages"
 composed=$(
-  base_pkg_lists=("$fixture/lists/omarchy-base.packages")
-  OMARCHY_ARCH=aarch64
+  base_pkg_lists=("$fixture/lists/collie-base.packages")
+  COLLIE_ARCH=aarch64
   eval "$(sed -n '/^# aarch64 takes the runtime/,/^fi$/p' "$ROOT/builder/build-iso.sh")" 2>/dev/null
   cat "${base_pkg_lists[0]}"
   echo "--"
-  cat "$platform_base_dir/omarchy-base.aarch64-n1x.packages"
+  cat "$platform_base_dir/collie-base.aarch64-n1x.packages"
   echo "--"
-  cat "$platform_base_dir/omarchy-base.aarch64-qualcomm.packages"
+  cat "$platform_base_dir/collie-base.aarch64-qualcomm.packages"
   echo "--"
   ls "$platform_base_dir"
   echo "--"
   printf '%s\n' "${platform_lists[@]##*/}"
 )
-[[ $composed == $'base-one\nbase-two\nzram-generator\nrtkit\n--\nbase-one\nbase-two\nzram-generator\nrtkit\nlinux-omarchy\n--\nbase-one\nbase-two\nzram-generator\nrtkit\nvulkan-freedreno\n--\nomarchy-base.aarch64-n1x.packages\nomarchy-base.aarch64-qualcomm.packages\n--\nomarchy-aarch64-n1x.packages\nomarchy-aarch64-qualcomm.packages' ]] \
+[[ $composed == $'base-one\nbase-two\nzram-generator\nrtkit\n--\nbase-one\nbase-two\nzram-generator\nrtkit\nlinux-omarchy\n--\nbase-one\nbase-two\nzram-generator\nrtkit\nvulkan-freedreno\n--\ncollie-base.aarch64-n1x.packages\ncollie-base.aarch64-qualcomm.packages\n--\ncollie-aarch64-n1x.packages\ncollie-aarch64-qualcomm.packages' ]] \
   || fail "aarch64 does not get the base list plus its architecture's additions, and one set per platform apart from Apple Silicon: $composed"
 composed=$(
-  rm "$fixture/lists"/omarchy-aarch64*.packages "$fixture/lists/omarchy-x86_64-only.packages"
-  base_pkg_lists=("$fixture/lists/omarchy-base.packages")
-  OMARCHY_ARCH=aarch64
+  rm "$fixture/lists"/collie-aarch64*.packages "$fixture/lists/collie-x86_64-only.packages"
+  base_pkg_lists=("$fixture/lists/collie-base.packages")
+  COLLIE_ARCH=aarch64
   eval "$(sed -n '/^# aarch64 takes the runtime/,/^fi$/p' "$ROOT/builder/build-iso.sh")" 2>/dev/null
   cat "${base_pkg_lists[0]}"
   ls "$platform_base_dir"

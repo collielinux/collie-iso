@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# The dashboard asks omarchy-release-install-target to let go of the target
+# The dashboard asks collie-release-install-target to let go of the target
 # before it offers the install medium's removal, and that release's verdict
 # decides two things the user acts on: whether the finish screen says the
 # stick may come out, and whether the button does the medium-free
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-DASHBOARD="$ROOT/configs/airootfs/usr/local/bin/omarchy-install-dashboard"
+DASHBOARD="$ROOT/configs/airootfs/usr/local/bin/collie-install-dashboard"
 
 fails=0
 check() { # desc, expected, actual
@@ -43,14 +43,14 @@ check_absent() { # desc, needle, haystack
 
 BOX=$(mktemp -d)
 trap 'rm -rf "$BOX"' EXIT
-mkdir -p "$BOX/bin" "$BOX/omarchy"
-printf 'OMARCHY\n' >"$BOX/omarchy/logo.txt"
+mkdir -p "$BOX/bin" "$BOX/collie"
+printf 'COLLIE\n' >"$BOX/collie/logo.txt"
 printf '{"target": "%s/mnt", "started_at": 0, "finished_at": 62}\n' "$BOX" >"$BOX/state.json"
 
 # The release helper the dashboard shells out to, standing in for the real
 # sweep: it echoes the diagnosis a failing sweep writes to stderr and takes
 # its exit status from a fixture, which is the whole contract between them.
-cat >"$BOX/bin/omarchy-release-install-target" <<'EOF'
+cat >"$BOX/bin/collie-release-install-target" <<'EOF'
 #!/bin/bash
 echo "release-helper $*" >>"$BOX/calls"
 echo "could not unmount $1; holders: init(1)" >&2
@@ -109,8 +109,8 @@ scenario() { # function-to-call, release_rc  ->  sets TTY_OUT, LOG_OUT, CALLS
     PATH="$BOX/bin:$PATH"
     exec 9>"$BOX/tty.fifo"
     # The definitions run from $BOX, so the catalog is not next to them.
-    INSTALLER_I18N="$ROOT/configs/airootfs/usr/share/omarchy-iso/i18n.sh" \
-      OMARCHY_DASHBOARD_TTY="$BOX/tty.fifo" OMARCHY_PATH="$BOX/omarchy" \
+    INSTALLER_I18N="$ROOT/configs/airootfs/usr/share/collie-iso/i18n.sh" \
+      COLLIE_DASHBOARD_TTY="$BOX/tty.fifo" COLLIE_PATH="$BOX/collie" \
       PROGRESS_ICON="$ROOT/test/unit/fixtures/progress-icon.sh" \
       source "$BOX/dashboard-defs.sh" "$BOX/install.log" "$BOX/state.json" -- true
     release_target

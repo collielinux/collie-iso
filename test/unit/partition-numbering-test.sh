@@ -14,14 +14,14 @@
 set -uo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-LIB="$ROOT/configs/airootfs/usr/share/omarchy-iso/disk-partitioning.sh"
+LIB="$ROOT/configs/airootfs/usr/share/collie-iso/disk-partitioning.sh"
 
 if ! command -v parted >/dev/null 2>&1; then
   echo "SKIP: parted is not installed"
   exit 0
 fi
 
-# shellcheck source=../configs/airootfs/usr/share/omarchy-iso/disk-partitioning.sh
+# shellcheck source=../configs/airootfs/usr/share/collie-iso/disk-partitioning.sh
 source "$LIB"
 
 WORK=$(mktemp -d)
@@ -81,14 +81,14 @@ echo "==> numbering on a disk with holes"
 build_holey_disk
 check "existing numbers" "1 4" "$(partition_numbers "$IMG" | sort | tr '\n' ' ' | sed 's/ $//')"
 
-create_partition "$IMG" "$((1000 * MIB))" "$((1200 * MIB))" fat32 OMARCHY_EFI
+create_partition "$IMG" "$((1000 * MIB))" "$((1200 * MIB))" fat32 COLLIE_EFI
 check "create_partition succeeded (esp)" "0" "$?"
 esp_num="$created_partition_number"
 check "esp took the lowest free slot" "2" "$esp_num"
 
 # Starts a MiB past the ESP, the way run_partition_decide aligns ROOT_START_B
 # up from EFI_END_B + 1.
-create_partition "$IMG" "$((1201 * MIB))" "$((2000 * MIB))" btrfs OMARCHY_ROOT
+create_partition "$IMG" "$((1201 * MIB))" "$((2000 * MIB))" btrfs COLLIE_ROOT
 check "create_partition succeeded (root)" "0" "$?"
 root_num="$created_partition_number"
 check "root took the next free slot" "3" "$root_num"
@@ -118,7 +118,7 @@ mkpart_mib one ext4 1 200
 mkpart_mib two ext4 201 400
 created_parts=()
 
-create_partition "$IMG" "$((1000 * MIB))" "$((1200 * MIB))" fat32 OMARCHY_EFI
+create_partition "$IMG" "$((1000 * MIB))" "$((1200 * MIB))" fat32 COLLIE_EFI
 check "appends when there is no hole" "3" "$created_partition_number"
 
 echo "==> a refused creation stays out of the rollback list"
@@ -129,7 +129,7 @@ check "nothing tracked" "0" "${#created_parts[@]}"
 
 echo "==> a failed read of the table never makes an existing partition look new"
 # The ESP being created is the size of the ESP an earlier install left, as on
-# any machine that already runs Omarchy. If the read before mkpart fails but
+# any machine that already runs Collie. If the read before mkpart fails but
 # the one after succeeds, every existing partition looks new; the size check
 # then accepts the old ESP as the one just made, and preparation formats it.
 rm -f "$IMG"
@@ -146,7 +146,7 @@ parted() {
   fi
   command parted "$@"
 }
-create_partition "$IMG" "$((4096 * MIB))" "$((6144 * MIB))" fat32 OMARCHY_EFI
+create_partition "$IMG" "$((4096 * MIB))" "$((6144 * MIB))" fat32 COLLIE_EFI
 check "creation refused when the table could not be read" "1" "$?"
 check "the existing ESP is not taken for the new one" "" "$created_partition_number"
 check "nothing tracked for rollback" "0" "${#created_parts[@]}"

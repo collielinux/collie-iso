@@ -19,7 +19,7 @@ class LiveDspTest(unittest.TestCase):
         self.tools.mkdir()
         self.env = dict(os.environ, PATH=f"{self.tools}:{os.environ['PATH']}",
                         DSP_TEST_ROOT=str(self.root))
-        script = (ROOT / "builder/qualcomm/omarchy-live-dsp").read_text()
+        script = (ROOT / "builder/qualcomm/collie-live-dsp").read_text()
         # Redirect only filesystem paths, not the guard logic, into the fixture.
         for prefix in ("/proc/", "/sys/", "/run/"):
             script = script.replace(prefix, f"{self.root}{prefix}")
@@ -108,7 +108,7 @@ exit "${DSP_TEST_MODPROBE_STATUS:-0}"
         self.assert_skipped("no device tree")
 
     def test_command_line_can_disable_startup(self):
-        self.write("proc/cmdline", "archisobasedir=arch omarchy.live_dsp=0\n")
+        self.write("proc/cmdline", "archisobasedir=arch collie.live_dsp=0\n")
         self.assert_skipped("disabled on the kernel command line")
 
     def test_installed_root_and_disk_backed_layers_are_rejected(self):

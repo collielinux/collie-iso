@@ -18,10 +18,10 @@ on:
   push:
     branches: [quattro]
   # By hand, the ISO can be built from another package channel: rc builds a
-  # release candidate the way omarchy-release does (omarchy-iso-make --rc), to
+  # release candidate the way collie-release does (collie-iso-make --rc), to
   # test a fresh install of it, on both architectures, and stable the release
   # the same way. A pull request or a merge builds both from edge: this branch
-  # is built against omarchy's quattro, which the edge packages track.
+  # is built against collie's quattro, which the edge packages track.
   workflow_dispatch:
     inputs:
       channel:
@@ -111,7 +111,7 @@ jobs:
         if: env.ARCH == 'x86_64'
 
       # A pull request's or merge's ISO installs what the edge channel serves,
-      # built from omarchy's quattro, as the nightly does; on aarch64 that runs
+      # built from collie's quattro, as the nightly does; on aarch64 that runs
       # linux-omarchy, the one kernel for every aarch64 board. A run by hand
       # builds both from the channel it names. Every package comes from the
       # package repositories, none is built here.
@@ -126,9 +126,9 @@ jobs:
             *) flag= ;;
           esac
           if [[ $ARCH == aarch64 ]]; then
-            ./bin/omarchy-iso-make --arch aarch64 $flag --no-boot-offer
+            ./bin/collie-iso-make --arch aarch64 $flag --no-boot-offer
           else
-            NO_BOOT_OFFER=1 ./bin/omarchy-iso-make $flag
+            NO_BOOT_OFFER=1 ./bin/collie-iso-make $flag
           fi
           mkdir -p test-runs && echo $(( $(date +%s) - start )) >test-runs/build-seconds
 
@@ -189,7 +189,7 @@ jobs:
         # install; empty runs all of them but those in except. live: run the
         # scenarios without the shared install, for the ones that boot the
         # ISO themselves. options go to test/integration, env to the harness
-        # (OMARCHY_INTEGRATION_*, base-test.sh).
+        # (COLLIE_INTEGRATION_*, base-test.sh).
         #
         # default and encrypted run every scenario no other job runs, so a
         # new scenario runs there until it is given a job; except lists the
@@ -200,7 +200,7 @@ jobs:
             except: &elsewhere used-disk full-nvram live-lowmem pxe slow-medium corrupt-image luks-calibration
           - variant: encrypted
             except: *elsewhere
-            env: OMARCHY_INTEGRATION_ENCRYPT=true
+            env: COLLIE_INTEGRATION_ENCRYPT=true
           # Reinstalls over a disk the base install has used, and over
           # firmware with a full NVRAM. live-lowmem boots the live ISO with
           # the UEFI variables the shared install leaves, so it runs after
@@ -210,7 +210,7 @@ jobs:
             scenarios: used-disk full-nvram live-lowmem
           - variant: encrypted-reinstall
             scenarios: used-disk full-nvram
-            env: OMARCHY_INTEGRATION_ENCRYPT=true
+            env: COLLIE_INTEGRATION_ENCRYPT=true
           # The live ISO, without the shared install: pxe installs over the
           # network itself, the others stop before any disk is formatted.
           - variant: live-pxe
@@ -220,7 +220,7 @@ jobs:
           - variant: live-pxe-encrypted
             scenarios: pxe
             live: true
-            env: OMARCHY_INTEGRATION_ENCRYPT=true
+            env: COLLIE_INTEGRATION_ENCRYPT=true
           - variant: live-media
             scenarios: slow-medium corrupt-image
             live: true
@@ -229,32 +229,32 @@ jobs:
             live: true
           - variant: kb-uk
             scenarios: boot keymap-locale
-            env: OMARCHY_INTEGRATION_KB_LAYOUT=uk
+            env: COLLIE_INTEGRATION_KB_LAYOUT=uk
           - variant: encrypted-kb-uk
             scenarios: boot keymap-locale
-            env: OMARCHY_INTEGRATION_ENCRYPT=true OMARCHY_INTEGRATION_KB_LAYOUT=uk
+            env: COLLIE_INTEGRATION_ENCRYPT=true COLLIE_INTEGRATION_KB_LAYOUT=uk
           - variant: small-disk
             scenarios: boot
-            env: OMARCHY_INTEGRATION_DISK_GB=24
+            env: COLLIE_INTEGRATION_DISK_GB=24
           - variant: low-memory
             scenarios: boot
             memory: 4096
           - variant: low-memory-encrypted
             scenarios: boot
             memory: 2048
-            env: OMARCHY_INTEGRATION_ENCRYPT=true
+            env: COLLIE_INTEGRATION_ENCRYPT=true
           - variant: bios
             scenarios: boot firmware-boot
             options: --bios
           - variant: uki
             scenarios: boot
-            env: OMARCHY_INTEGRATION_UKI=true
+            env: COLLIE_INTEGRATION_UKI=true
           # A 30 MiB/s medium, a USB 2 stick: the install is read-bound and
           # the image does not stay cached between the verify and the write.
           - variant: usb2-4g
             scenarios: noop
             memory: 4096
-            env: OMARCHY_INTEGRATION_ENCRYPT=true OMARCHY_ISO_THROTTLE_BPS=31457280
+            env: COLLIE_INTEGRATION_ENCRYPT=true COLLIE_ISO_THROTTLE_BPS=31457280
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -275,7 +275,7 @@ jobs:
 
       # The harness runs in an Arch container: Arch's current QEMU and OVMF
       # (QEMU 11) instead of the runner's older one, at the paths the
-      # harness expects, the same as on an Omarchy workstation.
+      # harness expects, the same as on an Collie workstation.
       - name: Install unattended, then run the scenarios
         env:
           VARIANT: ${{ matrix.variant }}
@@ -304,8 +304,8 @@ jobs:
           variant_env=()
           for setting in $VARIANT_ENV; do variant_env+=(-e "$setting"); done
           docker run --rm --device /dev/kvm -v "$PWD:/w" -w /w \
-            -e OMARCHY_INTEGRATION_DISK_CACHE=none -e OMARCHY_INTEGRATION_DISCARD_DISKS=1 \
-            -e OMARCHY_INTEGRATION_VARIANT="$VARIANT" -e SCENARIOS -e LIVE -e OPTIONS -e MEMORY \
+            -e COLLIE_INTEGRATION_DISK_CACHE=none -e COLLIE_INTEGRATION_DISCARD_DISKS=1 \
+            -e COLLIE_INTEGRATION_VARIANT="$VARIANT" -e SCENARIOS -e LIVE -e OPTIONS -e MEMORY \
             "${variant_env[@]}" \
             ghcr.io/archlinux/archlinux:latest bash -euo pipefail -c '
               # pacman 7 fails every sync on a kernel without Landlock, which
@@ -324,16 +324,16 @@ jobs:
                 [ "$attempt" -lt 3 ] || { echo "::error::the test container could not install its tools"; exit 1; }
                 echo "pacman failed, attempt $attempt of 3; trying again in 15 s"; sleep 15
               done
-              # test/integration installs its tools through Omarchy'"'"'s helper; they are installed above.
-              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/omarchy-pkg-add
-              chmod 0755 /usr/local/bin/omarchy-pkg-add
+              # test/integration installs its tools through Collie'"'"'s helper; they are installed above.
+              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/collie-pkg-add
+              chmod 0755 /usr/local/bin/collie-pkg-add
               qemu-system-x86_64 --version | head -1
               if [ -n "$LIVE" ]; then
                 # What test/integration does around a scenario, without its
                 # install: these boot the ISO themselves.
-                export OMARCHY_INTEGRATION_ISO OMARCHY_INTEGRATION_MEMORY="$MEMORY" \
-                  OMARCHY_INTEGRATION_INSTALL_TIMEOUT=1800 OMARCHY_INTEGRATION_NO_PREVIEW=true
-                OMARCHY_INTEGRATION_ISO=$(realpath release/*.iso)
+                export COLLIE_INTEGRATION_ISO COLLIE_INTEGRATION_MEMORY="$MEMORY" \
+                  COLLIE_INTEGRATION_INSTALL_TIMEOUT=1800 COLLIE_INTEGRATION_NO_PREVIEW=true
+                COLLIE_INTEGRATION_ISO=$(realpath release/*.iso)
                 status=0
                 for name in $SCENARIOS; do
                   printf "\033[1;35m==> %s\033[0m\n" "test/integration.d/$name-test.sh"
@@ -368,11 +368,11 @@ jobs:
           firmware=uefi kb=us encrypt=false uki=false disk_gb=40
           for setting in $VARIANT_ENV; do
             case $setting in
-              OMARCHY_INTEGRATION_FIRMWARE=*) firmware=${setting#*=} ;;
-              OMARCHY_INTEGRATION_KB_LAYOUT=*) kb=${setting#*=} ;;
-              OMARCHY_INTEGRATION_ENCRYPT=*) encrypt=${setting#*=} ;;
-              OMARCHY_INTEGRATION_UKI=*) uki=${setting#*=} ;;
-              OMARCHY_INTEGRATION_DISK_GB=*) disk_gb=${setting#*=} ;;
+              COLLIE_INTEGRATION_FIRMWARE=*) firmware=${setting#*=} ;;
+              COLLIE_INTEGRATION_KB_LAYOUT=*) kb=${setting#*=} ;;
+              COLLIE_INTEGRATION_ENCRYPT=*) encrypt=${setting#*=} ;;
+              COLLIE_INTEGRATION_UKI=*) uki=${setting#*=} ;;
+              COLLIE_INTEGRATION_DISK_GB=*) disk_gb=${setting#*=} ;;
             esac
           done
           for option in $OPTIONS; do [ "$option" != --bios ] || firmware=bios; done
@@ -391,12 +391,12 @@ jobs:
             echo
             echo "Channel: \`${{ inputs.channel || 'edge' }}\`"
             echo
-            if [ -f "$base/omarchy-install-timing.json" ]; then
-              jq -r '"**Install:** \((.finished_at - .started_at) * 10 | round / 10) s across \(.phases | length) phases"' "$base/omarchy-install-timing.json"
+            if [ -f "$base/collie-install-timing.json" ]; then
+              jq -r '"**Install:** \((.finished_at - .started_at) * 10 | round / 10) s across \(.phases | length) phases"' "$base/collie-install-timing.json"
               echo
               echo "| Phase | Seconds |"
               echo "| --- | ---: |"
-              jq -r '.phases[] | "| \(.name) | \(.elapsed * 10 | round / 10) |"' "$base/omarchy-install-timing.json"
+              jq -r '.phases[] | "| \(.name) | \(.elapsed * 10 | round / 10) |"' "$base/collie-install-timing.json"
               echo
             fi
             if [ -f "$base/first-boot-systemd-analyze.txt" ]; then
@@ -432,8 +432,8 @@ jobs:
             test-runs/*/*.png
             test-runs/*/serial.log
             test-runs/*/shots/*.png
-            test-runs/*/omarchy-install-timing.json
-            test-runs/*/omarchy-install.log
+            test-runs/*/collie-install-timing.json
+            test-runs/*/collie-install.log
             test-runs/*/first-boot-systemd-analyze.txt
             test-runs/*/runs/**/*.png
             test-runs/*/runs/**/*.txt
@@ -444,7 +444,7 @@ jobs:
 
   # The free-space install formats inside the configurator, before the
   # orchestrator or archinstall runs, and cidata autoinstall never reaches the
-  # configurator. bin/omarchy-iso-test drives the real wizard instead, on a
+  # configurator. bin/collie-iso-test drives the real wizard instead, on a
   # synthetic Windows-style disk (an ESP and an ext4 data partition with a
   # marker file), and checks the pre-existing partitions survive. --install-only
   # still runs those checks and the LUKS-sector check before it stops.
@@ -494,12 +494,12 @@ jobs:
                 [ "$attempt" -lt 3 ] || { echo "::error::the test container could not install its tools"; exit 1; }
                 echo "pacman failed, attempt $attempt of 3; trying again in 15 s"; sleep 15
               done
-              # bin/omarchy-iso-test installs its tools through omarchy-pkg-add;
+              # bin/collie-iso-test installs its tools through collie-pkg-add;
               # they are installed above.
-              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/omarchy-pkg-add
-              chmod 0755 /usr/local/bin/omarchy-pkg-add
+              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/collie-pkg-add
+              chmod 0755 /usr/local/bin/collie-pkg-add
               qemu-system-x86_64 --version | head -1
-              ./bin/omarchy-iso-test release/*.iso --free-space --encrypt --install-only \
+              ./bin/collie-iso-test release/*.iso --free-space --encrypt --install-only \
                 --no-preview --memory 8192 --timeout 1800
             '
 
@@ -598,12 +598,12 @@ jobs:
             echo
             echo "Channel: \`${{ inputs.channel || 'edge' }}\`"
             echo
-            if [ -f "$base/omarchy-install-timing.json" ]; then
-              jq -r '"**Install:** \((.finished_at - .started_at) * 10 | round / 10) s across \(.phases | length) phases"' "$base/omarchy-install-timing.json"
+            if [ -f "$base/collie-install-timing.json" ]; then
+              jq -r '"**Install:** \((.finished_at - .started_at) * 10 | round / 10) s across \(.phases | length) phases"' "$base/collie-install-timing.json"
               echo
               echo "| Phase | Seconds |"
               echo "| --- | ---: |"
-              jq -r '.phases[] | "| \(.name) | \(.elapsed * 10 | round / 10) |"' "$base/omarchy-install-timing.json"
+              jq -r '.phases[] | "| \(.name) | \(.elapsed * 10 | round / 10) |"' "$base/collie-install-timing.json"
               echo
             fi
             if [ -f "$base/first-boot-systemd-analyze.txt" ]; then
@@ -637,8 +637,8 @@ jobs:
             test-runs/*/*.png
             test-runs/*/serial.log
             test-runs/*/shots/*.png
-            test-runs/*/omarchy-install-timing.json
-            test-runs/*/omarchy-install.log
+            test-runs/*/collie-install-timing.json
+            test-runs/*/collie-install.log
             test-runs/*/first-boot-systemd-analyze.txt
             test-runs/*/runs/**/*.png
             test-runs/*/runs/**/*.txt

@@ -10,8 +10,8 @@
 set -uo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-# shellcheck source=../configs/airootfs/usr/share/omarchy-iso/disk-partitioning.sh
-source "$ROOT/configs/airootfs/usr/share/omarchy-iso/disk-partitioning.sh"
+# shellcheck source=../configs/airootfs/usr/share/collie-iso/disk-partitioning.sh
+source "$ROOT/configs/airootfs/usr/share/collie-iso/disk-partitioning.sh"
 
 WORK=$(mktemp -d)
 trap "rm -rf \"\$WORK\"" EXIT
@@ -27,15 +27,15 @@ check() {
   fi
 }
 
-export OMARCHY_INSTALL_LOG_FILE="$WORK/install.log"
-: >"$OMARCHY_INSTALL_LOG_FILE"
+export COLLIE_INSTALL_LOG_FILE="$WORK/install.log"
+: >"$COLLIE_INSTALL_LOG_FILE"
 
 screen=$(disk_step "a quiet success" sh -c "echo chatty; echo also-chatty >&2")
 check "success prints nothing" "" "$screen"
 check "success is logged, stderr included" "chatty also-chatty" \
-  "$(tr "\n" " " <"$OMARCHY_INSTALL_LOG_FILE" | sed "s/ \$//")"
+  "$(tr "\n" " " <"$COLLIE_INSTALL_LOG_FILE" | sed "s/ \$//")"
 
-: >"$OMARCHY_INSTALL_LOG_FILE"
+: >"$COLLIE_INSTALL_LOG_FILE"
 screen=$( (disk_step "a loud failure" sh -c "echo why-it-broke >&2; exit 3") 2>/dev/null)
 check "failure prints the output" "why-it-broke" "$screen"
 
@@ -51,11 +51,11 @@ check "a long failure line wraps inside the padding" "    abcdefghijklmnopqrstuv
 # The free-space path formats and opens LUKS through disk_step, the
 # passphrase on stdin from printf: the command reads it byte for byte, with no
 # newline, and what it prints stays off the screen.
-: >"$OMARCHY_INSTALL_LOG_FILE"
+: >"$COLLIE_INSTALL_LOG_FILE"
 screen=$(disk_step "reads a passphrase" sh -c 'printf "got %s bytes\n" "$(wc -c | tr -d " ")"; echo notice >&2' < <(printf "%s" "s3cret"))
 check "a passphrase on stdin leaves the screen alone" "" "$screen"
 check "the command read it without a newline" "got 6 bytes notice" \
-  "$(tr "\n" " " <"$OMARCHY_INSTALL_LOG_FILE" | sed "s/ \$//")"
+  "$(tr "\n" " " <"$COLLIE_INSTALL_LOG_FILE" | sed "s/ \$//")"
 
 # Nothing in the free-space path prints straight to the terminal: the LUKS
 # format and open run under disk_step, not as bare pipes folding stderr into
@@ -64,11 +64,11 @@ check "the command read it without a newline" "got 6 bytes notice" \
 # start with disk_step.
 configurator="$ROOT/configs/airootfs/root/configurator"
 statements=$(awk '{ if (sub(/\\$/, "")) { line = line $0; next } print line $0; line = "" }' "$configurator" |
-  grep -E 'omarchy-luks-calibrate format|cryptsetup open ')
+  grep -E 'collie-luks-calibrate format|cryptsetup open ')
 check "both LUKS commands are in the free-space path" "2" "$(grep -c . <<<"$statements")"
 check "no LUKS command writes to the terminal" "0" "$(grep -cvE '^[[:space:]]*disk_step ' <<<"$statements")"
 
-unset OMARCHY_INSTALL_LOG_FILE
+unset COLLIE_INSTALL_LOG_FILE
 screen=$(disk_step "no log file" echo visible)
 check "without a log file the output is not lost" "visible" "$screen"
 

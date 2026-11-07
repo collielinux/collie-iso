@@ -7,7 +7,7 @@ hook compiles the layout named by /etc/vconsole.conf into the initramfs. The
 installer writes the user's choice to the target afterwards, so a UKI that is
 only copied keeps the image's layout — and the LUKS passphrase prompt runs from
 that initramfs. A passphrase enrolled under AZERTY is then untypeable at a
-QWERTY prompt and the owner is locked out of a fresh install (omarchy#8196).
+QWERTY prompt and the owner is locked out of a fresh install (collie#8196).
 
 Two failure directions, and the test pins both, because they trade off against
 each other and the tempting default is wrong in one of them:
@@ -29,7 +29,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 
 # phases_impl imports the archinstall adapter at module scope, which pulls in
 # the archinstall library that only exists on the live ISO.
@@ -46,10 +46,10 @@ class PrebuiltUkiKeymapTest(unittest.TestCase):
         """A stand-in install target. recorded=None omits the file entirely
         (an image built before it existed); chosen=None omits vconsole.conf."""
         root = Path(tempfile.mkdtemp())
-        (root / "var/lib/omarchy-iso").mkdir(parents=True)
+        (root / "var/lib/collie-iso").mkdir(parents=True)
         (root / "etc").mkdir()
         if recorded is not None:
-            (root / "var/lib/omarchy-iso/prebuilt-uki.keymap").write_text(recorded)
+            (root / "var/lib/collie-iso/prebuilt-uki.keymap").write_text(recorded)
         if chosen is not None:
             (root / "etc/vconsole.conf").write_text(
                 f"KEYMAP={chosen}\nXKBLAYOUT=gb\nFONT=default8x16\n"
@@ -76,7 +76,7 @@ class PrebuiltUkiKeymapTest(unittest.TestCase):
     # --- the lockout must be caught -----------------------------------------
 
     def test_non_us_layout_against_an_empty_record_rebuilds(self):
-        """omarchy#8196 exactly: image baked us, user picked uk."""
+        """collie#8196 exactly: image baked us, user picked uk."""
         self.assertEqual(self.stale(recorded="\n", chosen="uk"), "uk")
 
     def test_non_us_layout_against_an_absent_record_rebuilds(self):

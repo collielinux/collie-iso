@@ -14,17 +14,17 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SHARE = ROOT / "configs/airootfs/usr/share/omarchy-iso"
+SHARE = ROOT / "configs/airootfs/usr/share/collie-iso"
 I18N = SHARE / "i18n"
 SOURCES = (
     ROOT / "configs/airootfs/root/configurator",
-    ROOT / "configs/airootfs/usr/local/bin/omarchy-install-dashboard",
+    ROOT / "configs/airootfs/usr/local/bin/collie-install-dashboard",
 )
-OMARCHY_CANDIDATES = (
-    Path(os.environ.get("OMARCHY_PATH", "/nonexistent")),
-    Path("/omarchy-source"),
-    ROOT.parent / "omarchy",
-    Path("/usr/share/omarchy"),
+COLLIE_CANDIDATES = (
+    Path(os.environ.get("COLLIE_PATH", "/nonexistent")),
+    Path("/collie-source"),
+    ROOT.parent / "collie",
+    Path("/usr/share/collie"),
 )
 TERMINUS = Path("/usr/share/kbd/consolefonts")
 PLACEHOLDER = re.compile(r"%\d")
@@ -42,8 +42,8 @@ def catalogs():
     return {path.stem: json.loads(path.read_text()) for path in sorted(I18N.glob("*.json"))}
 
 
-def omarchy_file(relative):
-    for root in OMARCHY_CANDIDATES:
+def collie_file(relative):
+    for root in COLLIE_CANDIDATES:
         if (root / relative).is_file():
             return root / relative
     return None
@@ -88,12 +88,12 @@ class CatalogTest(unittest.TestCase):
                     with self.subTest(code=code, key=key):
                         self.assertLessEqual(len(line.replace("%1", tip)), 80)
 
-    def test_codes_are_omarchy_languages(self):
-        registry = omarchy_file("default/i18n/locales.json")
+    def test_codes_are_collie_languages(self):
+        registry = collie_file("default/i18n/locales.json")
         for code in self.catalogs:
             self.assertRegex(code, r"^[a-z]{2,3}(-[A-Z]{2})?$")
         if registry is None:
-            self.skipTest("no Omarchy runtime to read the language registry from")
+            self.skipTest("no Collie runtime to read the language registry from")
         self.assertLessEqual(set(self.catalogs), set(json.loads(registry.read_text())))
 
     def test_every_key_is_used_and_every_used_key_exists(self):
@@ -115,7 +115,7 @@ class LanguageDefaultsTest(unittest.TestCase):
         configurator = SOURCES[0].read_text()
         functions = "\n".join(re.search(rf"^{name}\(\) \{{\n.*?^\}}\n", configurator, re.MULTILINE | re.DOTALL).group(0)
                               for name in ("language_default", "set_form_language"))
-        steps = "".join(f'language={code}; set_form_language; env | grep "^OMARCHY_FORM_" | sort; echo --;' for code in languages)
+        steps = "".join(f'language={code}; set_form_language; env | grep "^COLLIE_FORM_" | sort; echo --;' for code in languages)
         output = subprocess.run(
             ["bash", "-c", f"{functions}\n{steps}"],
             env={"PATH": os.environ["PATH"], "LANGUAGE_DEFAULTS": str(SHARE / "language-defaults.json")},
@@ -125,29 +125,29 @@ class LanguageDefaultsTest(unittest.TestCase):
 
     def test_the_setup_form_gets_the_language_and_its_defaults(self):
         polish, arabic, english, unknown = self.form_environment("pl", "ar", "en", "xx")
-        self.assertEqual(polish, {"OMARCHY_FORM_LANGUAGE": "pl", "OMARCHY_FORM_KEYBOARD_DEFAULT": "Polish",
-                                  "OMARCHY_FORM_TIMEZONE_FALLBACK": "Europe/Warsaw"})
+        self.assertEqual(polish, {"COLLIE_FORM_LANGUAGE": "pl", "COLLIE_FORM_KEYBOARD_DEFAULT": "Polish",
+                                  "COLLIE_FORM_TIMEZONE_FALLBACK": "Europe/Warsaw"})
         # Picking again replaces the fallback. A language with no home country
         # falls back to UTC: with no fallback at all, an offline form opens
         # its timezone search, where Enter takes the first zone, Africa/Abidjan.
-        self.assertEqual(arabic, {"OMARCHY_FORM_LANGUAGE": "ar", "OMARCHY_FORM_KEYBOARD_DEFAULT": "English (US)",
-                                  "OMARCHY_FORM_TIMEZONE_FALLBACK": "UTC"})
-        self.assertEqual(english["OMARCHY_FORM_TIMEZONE_FALLBACK"], "UTC")
-        self.assertEqual(unknown["OMARCHY_FORM_KEYBOARD_DEFAULT"], "English (US)")
-        self.assertEqual(unknown["OMARCHY_FORM_TIMEZONE_FALLBACK"], "UTC")
+        self.assertEqual(arabic, {"COLLIE_FORM_LANGUAGE": "ar", "COLLIE_FORM_KEYBOARD_DEFAULT": "English (US)",
+                                  "COLLIE_FORM_TIMEZONE_FALLBACK": "UTC"})
+        self.assertEqual(english["COLLIE_FORM_TIMEZONE_FALLBACK"], "UTC")
+        self.assertEqual(unknown["COLLIE_FORM_KEYBOARD_DEFAULT"], "English (US)")
+        self.assertEqual(unknown["COLLIE_FORM_TIMEZONE_FALLBACK"], "UTC")
 
     def test_every_language_in_the_picker_has_defaults(self):
         self.assertLessEqual(set(catalogs()), set(self.defaults))
-        registry = omarchy_file("default/i18n/locales.json")
+        registry = collie_file("default/i18n/locales.json")
         if registry is None:
-            self.skipTest("no Omarchy runtime to read the language registry from")
+            self.skipTest("no Collie runtime to read the language registry from")
         self.assertEqual(set(self.defaults), set(json.loads(registry.read_text())))
 
     def test_every_keyboard_is_a_row_of_the_setup_form(self):
-        form = omarchy_file("install/provisioning/setup-form.sh")
+        form = collie_file("install/provisioning/setup-form.sh")
         if form is None:
-            self.skipTest("no Omarchy runtime to read the setup form from")
-        rows = re.search(r"OMARCHY_KEYBOARD_LAYOUTS=\$'(.*?)'\n", form.read_text(), re.DOTALL).group(1).splitlines()
+            self.skipTest("no Collie runtime to read the setup form from")
+        rows = re.search(r"COLLIE_KEYBOARD_LAYOUTS=\$'(.*?)'\n", form.read_text(), re.DOTALL).group(1).splitlines()
         labels = {row.split("|")[0] for row in rows}
         for code, defaults in self.defaults.items():
             with self.subTest(code=code):
@@ -173,7 +173,7 @@ class LanguageDefaultsTest(unittest.TestCase):
 
 class ConsoleFontTest(unittest.TestCase):
     def test_the_live_console_font_draws_every_translated_string(self):
-        registry = omarchy_file("default/i18n/locales.json")
+        registry = collie_file("default/i18n/locales.json")
         names = json.loads(registry.read_text()) if registry else {}
         module = console_font()
         for size in ("16", "32"):
@@ -257,7 +257,7 @@ class ShellLookupTest(unittest.TestCase):
     def lookup(self, script, catalogs_dir):
         return subprocess.run(
             ["bash", "-c", f'source "{SHARE}/i18n.sh"; {script}'],
-            env={**os.environ, "OMARCHY_ISO_I18N_DIR": str(catalogs_dir)},
+            env={**os.environ, "COLLIE_ISO_I18N_DIR": str(catalogs_dir)},
             capture_output=True, text=True, check=True,
         ).stdout
 
@@ -280,7 +280,7 @@ class ConsoleFontLoadTest(unittest.TestCase):
                 (stubs / tool).chmod(0o755)
             result = subprocess.run(
                 ["bash", "-c", f'set -euo pipefail; source "{SHARE}/i18n.sh"; i18n_console_font /dev/tty1; echo survived'],
-                env={**os.environ, "PATH": f"{stubs}:{os.environ['PATH']}", "OMARCHY_ISO_CONSOLE_FONT": f"{stubs}/run/console.psf"},
+                env={**os.environ, "PATH": f"{stubs}:{os.environ['PATH']}", "COLLIE_ISO_CONSOLE_FONT": f"{stubs}/run/console.psf"},
                 capture_output=True, text=True,
             )
             self.assertEqual(result.stdout, "survived\n", result.stderr)
@@ -289,9 +289,9 @@ class ConsoleFontLoadTest(unittest.TestCase):
 class LanguageMarkerTest(unittest.TestCase):
     def marker(self, language):
         with tempfile.TemporaryDirectory() as directory:
-            ctx = types.SimpleNamespace(target=Path(directory), omarchy_install={"language": language})
+            ctx = types.SimpleNamespace(target=Path(directory), collie_install={"language": language})
             phases_impl._write_language_marker(ctx)
-            marker = Path(directory) / "etc/omarchy/language"
+            marker = Path(directory) / "etc/collie/language"
             return marker.read_text() if marker.exists() else None
 
     def test_a_chosen_language_reaches_the_target_and_english_writes_nothing(self):

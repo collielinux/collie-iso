@@ -91,7 +91,7 @@ class StepTest(unittest.TestCase):
         handler = DeviceHandler()
         # luks_tuning replaces Luks2's methods when the adapter loads; here
         # Luks2 is the stand-in the wrapper is observed on.
-        self.enterContext(mock.patch.dict(os.environ, {"OMARCHY_LUKS_TUNING": "0"}))
+        self.enterContext(mock.patch.dict(os.environ, {"COLLIE_LUKS_TUNING": "0"}))
 
         @contextmanager
         def time_step(label):

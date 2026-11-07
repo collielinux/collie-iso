@@ -5,7 +5,7 @@
 # happens once per ISO and is saved as a reusable base image; every scenario
 # then boots a throwaway overlay of that base.
 #
-# Usage: test/integration [release/omarchy.iso] [scenario ...] [options]
+# Usage: test/integration [release/collie.iso] [scenario ...] [options]
 #
 #   scenario       Basename of a test/integration.d/<scenario>-test.sh file;
 #                  all scenarios run when none are named
@@ -28,23 +28,23 @@ ISO=""
 REUSE_BASE=false
 SCENARIOS=()
 
-export OMARCHY_INTEGRATION_SSH_PORT=2322
-export OMARCHY_INTEGRATION_MEMORY=8192
-export OMARCHY_INTEGRATION_INSTALL_TIMEOUT=2400
-export OMARCHY_INTEGRATION_NO_PREVIEW=false
-export OMARCHY_INTEGRATION_RELEASE_ISO=false
-export OMARCHY_INTEGRATION_FIRMWARE="${OMARCHY_INTEGRATION_FIRMWARE:-uefi}"
+export COLLIE_INTEGRATION_SSH_PORT=2322
+export COLLIE_INTEGRATION_MEMORY=8192
+export COLLIE_INTEGRATION_INSTALL_TIMEOUT=2400
+export COLLIE_INTEGRATION_NO_PREVIEW=false
+export COLLIE_INTEGRATION_RELEASE_ISO=false
+export COLLIE_INTEGRATION_FIRMWARE="${COLLIE_INTEGRATION_FIRMWARE:-uefi}"
 
 while (($#)); do
   case "$1" in
     --reuse-base) REUSE_BASE=true ;;
-    --bios) OMARCHY_INTEGRATION_FIRMWARE=bios ;;
-    --uefi) OMARCHY_INTEGRATION_FIRMWARE=uefi ;;
-    --no-preview) OMARCHY_INTEGRATION_NO_PREVIEW=true ;;
-    --release-iso) OMARCHY_INTEGRATION_RELEASE_ISO=true ;;
-    --port) OMARCHY_INTEGRATION_SSH_PORT="$2"; shift ;;
-    --memory) OMARCHY_INTEGRATION_MEMORY="$2"; shift ;;
-    --timeout) OMARCHY_INTEGRATION_INSTALL_TIMEOUT="$2"; shift ;;
+    --bios) COLLIE_INTEGRATION_FIRMWARE=bios ;;
+    --uefi) COLLIE_INTEGRATION_FIRMWARE=uefi ;;
+    --no-preview) COLLIE_INTEGRATION_NO_PREVIEW=true ;;
+    --release-iso) COLLIE_INTEGRATION_RELEASE_ISO=true ;;
+    --port) COLLIE_INTEGRATION_SSH_PORT="$2"; shift ;;
+    --memory) COLLIE_INTEGRATION_MEMORY="$2"; shift ;;
+    --timeout) COLLIE_INTEGRATION_INSTALL_TIMEOUT="$2"; shift ;;
     -*) echo "Unknown option: $1" >&2; exit 1 ;;
     *)
       if [[ $1 == *.iso ]]; then
@@ -77,10 +77,10 @@ else
   done
 fi
 
-omarchy-pkg-add qemu-full edk2-ovmf socat imagemagick tesseract tesseract-data-eng mtools libisoburn
+collie-pkg-add qemu-full edk2-ovmf socat imagemagick tesseract tesseract-data-eng mtools libisoburn
 
-export OMARCHY_INTEGRATION_ISO
-OMARCHY_INTEGRATION_ISO=$(realpath "$ISO")
+export COLLIE_INTEGRATION_ISO
+COLLIE_INTEGRATION_ISO=$(realpath "$ISO")
 
 # The install phase runs in this process; scenarios run in their own so each
 # gets its own VM lifecycle, cleanup trap, and run directory.

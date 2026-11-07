@@ -2,7 +2,7 @@
 
 # The Snapdragon OEM firmware packages in the given sync databases: every
 # package that provides a qcom-firmware-<folder> name, one per firmware folder
-# a device tree loads from. Omarchy's install/hardware/qualcomm/oem-firmware.sh
+# a device tree loads from. Collie's install/hardware/qualcomm/oem-firmware.sh
 # installs a machine's package by that name, so the offline mirror needs all of
 # them, and finding them by what they provide keeps their names out of every
 # package list.

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-iso_name="omarchy"
-iso_label="OMARCHY_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
-iso_publisher="Omarchy <https://omarchy.org>"
-iso_application="Omarchy Installer"
+iso_name="collie"
+iso_label="COLLIE_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
+iso_publisher="Collie <https://omarchy.org>"
+iso_application="Collie Installer"
 iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
 install_dir="arch"
 buildmodes=('iso')
-# build-iso.sh exports OMARCHY_ARCH into the mkarchiso environment. aarch64
+# build-iso.sh exports COLLIE_ARCH into the mkarchiso environment. aarch64
 # firmware is UEFI-only, so the BIOS syslinux boot mode is dropped there.
-arch="${OMARCHY_ARCH:-x86_64}"
+arch="${COLLIE_ARCH:-x86_64}"
 if [[ $arch == aarch64 ]]; then
   bootmodes=('uefi.grub')
 else
@@ -33,7 +33,7 @@ airootfs_image_tool_options=(
   '-comp' 'zstd'
   '-Xcompression-level' '19'
   '-b' '1M'
-  '-action' 'uncompressed@subpathname(var/cache/omarchy/mirror/offline)'
+  '-action' 'uncompressed@subpathname(var/cache/collie/mirror/offline)'
 )
 bootstrap_tarball_compression=('zstd' '-c' '-T0' '--auto-threads=logical' '--long' '-19')
 file_permissions=(
@@ -44,16 +44,16 @@ file_permissions=(
   ["/root/configurator"]="0:0:755"
   ["/root/customize_airootfs.sh"]="0:0:755"
   ["/usr/local/bin/choose-mirror"]="0:0:755"
-  ["/usr/local/bin/omarchy-cidata-load"]="0:0:755"
-  ["/usr/local/bin/omarchy-wait-root-image-verify"]="0:0:755"
-  ["/usr/local/bin/omarchy-image-write"]="0:0:755"
-  ["/usr/local/bin/omarchy-iso-cleanup-disk"]="0:0:755"
-  ["/usr/local/bin/omarchy-release-install-target"]="0:0:755"
-  ["/usr/local/bin/omarchy-install-dashboard"]="0:0:755"
-  ["/usr/local/bin/omarchy-install-diagnose-media"]="0:0:755"
-  ["/usr/local/bin/omarchy-luks-calibrate"]="0:0:755"
-  ["/usr/local/bin/omarchy-iso-install"]="0:0:755"
-  ["/usr/local/bin/omarchy-upload-log"]="0:0:755"
-  ["/usr/local/sbin/omarchy-n1x-live-probe"]="0:0:755"
-  ["/var/cache/omarchy/mirror/offline/"]="0:0:775"
+  ["/usr/local/bin/collie-cidata-load"]="0:0:755"
+  ["/usr/local/bin/collie-wait-root-image-verify"]="0:0:755"
+  ["/usr/local/bin/collie-image-write"]="0:0:755"
+  ["/usr/local/bin/collie-iso-cleanup-disk"]="0:0:755"
+  ["/usr/local/bin/collie-release-install-target"]="0:0:755"
+  ["/usr/local/bin/collie-install-dashboard"]="0:0:755"
+  ["/usr/local/bin/collie-install-diagnose-media"]="0:0:755"
+  ["/usr/local/bin/collie-luks-calibrate"]="0:0:755"
+  ["/usr/local/bin/collie-iso-install"]="0:0:755"
+  ["/usr/local/bin/collie-upload-log"]="0:0:755"
+  ["/usr/local/sbin/collie-n1x-live-probe"]="0:0:755"
+  ["/var/cache/collie/mirror/offline/"]="0:0:775"
 )

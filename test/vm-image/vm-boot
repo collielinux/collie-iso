@@ -1,11 +1,11 @@
 #!/bin/bash
-# Boots a sealed Omarchy image (vm-seal) as a throwaway machine.
+# Boots a sealed Collie image (vm-seal) as a throwaway machine.
 #
 #   vm-boot <image>                 boot, print how to log in, run until Ctrl-C
 #   vm-boot <image> <command...>    boot, run the command over SSH, power off;
 #                                   exits with the command's status
 #
-# <image> is a downloaded disk, omarchy-<...>.qcow2, with vmlinuz, initrd and
+# <image> is a downloaded disk, collie-<...>.qcow2, with vmlinuz, initrd and
 # cmdline in the same directory as this script, as in a published "unpacked"
 # folder. Or it is a directory as vm-seal leaves it, holding base.qcow2 and
 # those three files.
@@ -51,7 +51,7 @@ uuid=${VM_UUID:-$(cat /proc/sys/kernel/random/uuid)}
 # A key made for this boot only, handed in through the firmware tables as a
 # systemd credential that writes authorized_keys.
 ssh-keygen -q -t ed25519 -N '' -C vm-boot -f "$state/id_ed25519"
-keys=$(printf 'd /home/omarchy/.ssh 0700 omarchy omarchy -\nf+ /home/omarchy/.ssh/authorized_keys 0600 omarchy omarchy - %s\n' \
+keys=$(printf 'd /home/collie/.ssh 0700 collie collie -\nf+ /home/collie/.ssh/authorized_keys 0600 collie collie - %s\n' \
   "$(cat "$state/id_ed25519.pub")" | base64 -w0)
 ssh_opts=(-i "$state/id_ed25519" -p "$port" -o BatchMode=yes -o IdentitiesOnly=yes
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR)
@@ -69,7 +69,7 @@ qemu-system-x86_64 -cpu host -enable-kvm -machine q35,accel=kvm -smp "${SMP:-4}"
   -qmp "unix:$state/qmp.sock,server,nowait" -pidfile "$state/qemu.pid" -daemonize ${QEMU_EXTRA:-}
 
 # </dev/null: the probe must not eat a script meant for the command below.
-until ssh "${ssh_opts[@]}" -o ConnectTimeout=1 omarchy@127.0.0.1 true </dev/null 2>/dev/null; do
+until ssh "${ssh_opts[@]}" -o ConnectTimeout=1 collie@127.0.0.1 true </dev/null 2>/dev/null; do
   kill -0 "$(cat "$state/qemu.pid")" 2>/dev/null || { echo "vm-boot: qemu exited before ssh came up" >&2; exit 1; }
   (( ($(date +%s%N) - t0) / 1000000 < 300000 )) || { echo "vm-boot: no ssh after 300s" >&2; exit 1; }
   sleep 0.2
@@ -78,9 +78,9 @@ echo "vm-boot: ssh up after $(( ($(date +%s%N) - t0) / 1000000 )) ms, machine ID
 
 if [[ $# -gt 0 ]]; then
   # Stdin passes through, so `vm-boot dir bash -s <script` works.
-  ssh "${ssh_opts[@]}" omarchy@127.0.0.1 "$@"
+  ssh "${ssh_opts[@]}" collie@127.0.0.1 "$@"
 else
-  echo "ssh ${ssh_opts[*]} omarchy@127.0.0.1"
-  echo "Desktop and sudo password: omarchy. QMP socket: $state/qmp.sock. Ctrl-C powers it off."
+  echo "ssh ${ssh_opts[*]} collie@127.0.0.1"
+  echo "Desktop and sudo password: collie. QMP socket: $state/qmp.sock. Ctrl-C powers it off."
   while kill -0 "$(cat "$state/qemu.pid")" 2>/dev/null; do sleep 1; done
 fi

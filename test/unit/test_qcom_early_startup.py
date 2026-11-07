@@ -64,8 +64,8 @@ class EarlyStartup(unittest.TestCase):
             harness = r'''
 getarg() {
  case "$1" in
- omarchy.qcom_early) printf '%s' "$ENABLED";;
- omarchy.qcom_timeout) printf '%s' "$TIMEOUT";;
+ collie.qcom_early) printf '%s' "$ENABLED";;
+ collie.qcom_timeout) printf '%s' "$TIMEOUT";;
  modprobe.blacklist) printf '%s' "$BLACKLIST";;
  module_blacklist) printf '%s' "$KERNEL_BLACKLIST";;
  *) printf '%s' "${2:-}";;

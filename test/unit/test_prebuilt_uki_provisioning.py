@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter",
     types.ModuleType("orchestrator.archinstall_adapter"),
@@ -34,7 +34,7 @@ class PrebuiltUkiProvisioningTest(unittest.TestCase):
 
     def test_a_staged_provisioning_key_builds_the_uki_on_the_machine(self):
         ctx = types.SimpleNamespace(target=self.root)
-        provisioning = self.root / "var/lib/omarchy/provisioning"
+        provisioning = self.root / "var/lib/collie/provisioning"
         provisioning.mkdir(parents=True)
         with mock.patch.object(phases_impl, "_provision_encryption_password", return_value="secret"), \
                 mock.patch.object(phases_impl, "info", lambda _message: None):

@@ -83,12 +83,12 @@ if ! install_unattended "$USED_DISK" "$RUN_DIR/install-serial.log"; then
   exit 1
 fi
 
-ssh_sudo "cat /var/log/omarchy-install.log" >"$RUN_DIR/omarchy-install.log" 2>/dev/null || true
+ssh_sudo "cat /var/log/collie-install.log" >"$RUN_DIR/collie-install.log" 2>/dev/null || true
 ssh_guest "lsblk -o NAME,TYPE,FSTYPE,MOUNTPOINTS" >"$RUN_DIR/lsblk.txt" 2>/dev/null || true
 
 # An empty answer is a failed query, not a clean disk.
 types=$(ssh_guest "lsblk -rno TYPE" 2>/dev/null | tr -d '\r' || true)
-check "the installer stopped the old RAID array" grep -q "Stopping /dev/md" "$RUN_DIR/omarchy-install.log"
+check "the installer stopped the old RAID array" grep -q "Stopping /dev/md" "$RUN_DIR/collie-install.log"
 check "the root filesystem is btrfs" test "$(ssh_guest "findmnt -no FSTYPE /" 2>/dev/null | tr -d '\r')" = btrfs
 check "the installed system lists its partitions" grep -qx part <<<"$types"
 check "no RAID array survived" bash -c '! grep -q "^raid" <<<"$1"' _ "$types"

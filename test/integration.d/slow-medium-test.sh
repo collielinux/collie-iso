@@ -21,8 +21,8 @@
 
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
 
-VERIFY_UNIT=omarchy-root-image-verify.service
-STATE=/run/omarchy-install/state.json
+VERIFY_UNIT=collie-root-image-verify.service
+STATE=/run/collie-install/state.json
 
 # Slow enough that hashing the multi-GB image cannot beat the timeout, fast
 # enough that the live system boots promptly: the image needs 90+ s at this
@@ -54,7 +54,7 @@ install_from_slow_medium() {
   local cred
   cred=$(base64 -w0 <<<"$TIMEOUT_DROPIN")
 
-  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "omarchy-integration" -f "$SSH_KEY"
+  [[ -f $SSH_KEY ]] || ssh-keygen -t ed25519 -N "" -q -C "collie-integration" -f "$SSH_KEY"
   detect_packages
   build_cidata
 
@@ -128,7 +128,7 @@ install_from_slow_medium() {
 
   log "Waiting for the installer to stop"
   local waited=0
-  until ssh_live_root 'grep -q "installer child exited" /var/log/omarchy-install.log' 2>/dev/null; do
+  until ssh_live_root 'grep -q "installer child exited" /var/log/collie-install.log' 2>/dev/null; do
     if ! vm_running; then
       echo "VM exited while waiting for the installer" >&2
       return 1
@@ -156,7 +156,7 @@ install_from_slow_medium() {
 
   sleep 2
   capture_console "success-installer-stopped"
-  ssh_live_root "cat /var/log/omarchy-install.log" >"$RUN_DIR/omarchy-install.log" 2>/dev/null || true
+  ssh_live_root "cat /var/log/collie-install.log" >"$RUN_DIR/collie-install.log" 2>/dev/null || true
   ssh_live_root "cat $STATE" >"$RUN_DIR/state.json" 2>/dev/null || true
   ssh_live_root "journalctl -b -u $VERIFY_UNIT -o short-precise --no-pager" >"$RUN_DIR/verify-unit.journal" 2>/dev/null || true
 }
@@ -190,7 +190,7 @@ assert_named_slow() {
   # The stopped-banner renders red on dark, which OCR misreads; the log
   # carries the dashboard's own record of the stop.
   check "dashboard reported the installer stopped" \
-    grep -q "installer child exited with status 1" "$RUN_DIR/omarchy-install.log"
+    grep -q "installer child exited with status 1" "$RUN_DIR/collie-install.log"
   check "dashboard shows the slow-medium advice" \
     screen_shows "too slow"
 }

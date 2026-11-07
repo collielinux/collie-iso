@@ -19,7 +19,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter",
     types.ModuleType("orchestrator.archinstall_adapter"),
@@ -29,8 +29,8 @@ from orchestrator.uki_cmdline import PLACEHOLDER, embed_cmdline  # noqa: E402
 
 SECTION = 0x400  # where the synthesised image's .cmdline starts
 ROOM = 1800
-REAL = ("cryptdevice=UUID=8a7c:omarchy_root root=/dev/mapper/omarchy_root rw  quiet splash\n"
-        "rd.luks.name=8a7c=omarchy_root")
+REAL = ("cryptdevice=UUID=8a7c:collie_root root=/dev/mapper/collie_root rw  quiet splash\n"
+        "rd.luks.name=8a7c=collie_root")
 
 
 def uki(cmdline: bytes) -> bytes:
@@ -115,15 +115,15 @@ class EmbedBeforeTheHashTest(unittest.TestCase):
         target = Path(self.enterContext(tempfile.TemporaryDirectory()))
         for path, text in {
             "usr/bin/limine-update": "",
-            "etc/default/limine": f'ESP_PATH="/boot"\nCUSTOM_UKI_NAME="omarchy"\nKERNEL_CMDLINE[default]+="{self.CMDLINE}"\n',
+            "etc/default/limine": f'ESP_PATH="/boot"\nCUSTOM_UKI_NAME="collie"\nKERNEL_CMDLINE[default]+="{self.CMDLINE}"\n',
             "etc/snapper/configs/root": "",
-            "boot/limine.conf": "/+Omarchy\n",
-            "var/lib/omarchy-iso/prebuilt-uki.kernel": "linux-omarchy\n",
+            "boot/limine.conf": "/+Collie\n",
+            "var/lib/collie-iso/prebuilt-uki.kernel": "linux-omarchy\n",
         }.items():
             (target / path).parent.mkdir(parents=True, exist_ok=True)
             (target / path).write_text(text)
-        (target / "var/lib/omarchy-iso/prebuilt-uki.efi").write_bytes(with_room())
-        esp_uki = target / "boot/EFI/Linux/omarchy_linux-omarchy.efi"
+        (target / "var/lib/collie-iso/prebuilt-uki.efi").write_bytes(with_room())
+        esp_uki = target / "boot/EFI/Linux/collie_linux-collie.efi"
 
         hashed = []
 
@@ -154,12 +154,12 @@ class PrebuiltUkiNameTest(unittest.TestCase):
             "usr/bin/limine-update": "",
             "etc/default/limine": 'ESP_PATH="/boot"\nCUSTOM_UKI_NAME="custom"\nKERNEL_CMDLINE[default]+="root=UUID=x rw"\n',
             "etc/snapper/configs/root": "",
-            "boot/limine.conf": "/+Omarchy\n",
-            "var/lib/omarchy-iso/prebuilt-uki.kernel": "linux-omarchy\n",
+            "boot/limine.conf": "/+Collie\n",
+            "var/lib/collie-iso/prebuilt-uki.kernel": "linux-omarchy\n",
         }.items():
             (target / path).parent.mkdir(parents=True, exist_ok=True)
             (target / path).write_text(text)
-        (target / "var/lib/omarchy-iso/prebuilt-uki.efi").write_bytes(with_room())
+        (target / "var/lib/collie-iso/prebuilt-uki.efi").write_bytes(with_room())
 
         registered = []
 
@@ -176,23 +176,23 @@ class PrebuiltUkiNameTest(unittest.TestCase):
              mock.patch.object(phases_impl, "_is_apple_t2_hardware", lambda: False):
             phases_impl.finalize_limine_boot(ctx)
 
-        self.assertTrue((target / "boot/EFI/Linux/custom_linux-omarchy.efi").is_file())
-        self.assertFalse((target / "boot/EFI/Linux/omarchy_linux-omarchy.efi").exists())
-        self.assertEqual(registered, ["/boot/EFI/Linux/custom_linux-omarchy.efi"])
+        self.assertTrue((target / "boot/EFI/Linux/custom_linux-collie.efi").is_file())
+        self.assertFalse((target / "boot/EFI/Linux/collie_linux-collie.efi").exists())
+        self.assertEqual(registered, ["/boot/EFI/Linux/custom_linux-collie.efi"])
 
     def test_without_a_valid_name_the_machine_id_names_it(self):
         target = Path(self.enterContext(tempfile.TemporaryDirectory()))
         (target / "etc").mkdir()
         (target / "etc/machine-id").write_text("0123456789abcdef0123456789abcdef\n")
         for config, prefix in [
-            ('CUSTOM_UKI_NAME="omarchy"\n', "omarchy"),
+            ('CUSTOM_UKI_NAME="collie"\n', "collie"),
             ("", "0123456789abcdef0123456789abcdef"),
             ('CUSTOM_UKI_NAME=""\n', "0123456789abcdef0123456789abcdef"),
             # limine-mkinitcpio warns and falls back for anything but a-z0-9.
-            ('CUSTOM_UKI_NAME="My-Omarchy"\n', "0123456789abcdef0123456789abcdef"),
+            ('CUSTOM_UKI_NAME="My-Collie"\n', "0123456789abcdef0123456789abcdef"),
             # Bash drops a trailing comment, quoted value or not.
-            ("CUSTOM_UKI_NAME=omarchy # custom name\n", "omarchy"),
-            ('CUSTOM_UKI_NAME="omarchy" # custom name\n', "omarchy"),
+            ("CUSTOM_UKI_NAME=collie # custom name\n", "collie"),
+            ('CUSTOM_UKI_NAME="collie" # custom name\n', "collie"),
         ]:
             with self.subTest(config=config):
                 self.assertEqual(phases_impl._uki_prefix(target, config), prefix)

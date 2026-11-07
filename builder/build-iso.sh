@@ -2,12 +2,12 @@
 
 set -e
 
-OMARCHY_ISO_REF="${OMARCHY_ISO_REF:-quattro}"
-OMARCHY_MIRROR="${OMARCHY_MIRROR:-stable}"
-OMARCHY_ARCH="${OMARCHY_ARCH:-x86_64}"
-OMARCHY_KERNEL="${OMARCHY_KERNEL:-linux-omarchy}"
+COLLIE_ISO_REF="${COLLIE_ISO_REF:-quattro}"
+COLLIE_MIRROR="${COLLIE_MIRROR:-stable}"
+COLLIE_ARCH="${COLLIE_ARCH:-x86_64}"
+COLLIE_KERNEL="${COLLIE_KERNEL:-linux-omarchy}"
 # profiledef.sh reads both in the mkarchiso environment.
-export OMARCHY_ARCH OMARCHY_KERNEL
+export COLLIE_ARCH COLLIE_KERNEL
 
 source /builder/node-release.sh
 source /builder/arm64-kernel-image.sh
@@ -15,18 +15,18 @@ source /builder/archiso-aarch64-mkinitcpio.sh
 source /builder/grub-platform.sh
 
 # The online pacman configuration drives every package download below: one per
-# architecture and channel. On aarch64 it points at Omarchy's aarch64
+# architecture and channel. On aarch64 it points at Collie's aarch64
 # repository and its mirror of Arch Linux ARM in the build's channel, and at a
 # package bundle mounted at /packages first when there is one.
-case "$OMARCHY_ARCH" in
+case "$COLLIE_ARCH" in
   x86_64)
-    online_pacman_conf="/configs/pacman-online-${OMARCHY_MIRROR}.conf"
+    online_pacman_conf="/configs/pacman-online-${COLLIE_MIRROR}.conf"
     ;;
   aarch64)
-    online_pacman_conf="/configs/pacman-online-aarch64-${OMARCHY_MIRROR}.conf"
+    online_pacman_conf="/configs/pacman-online-aarch64-${COLLIE_MIRROR}.conf"
     # One image serves every board, on one kernel.
-    if [[ $OMARCHY_KERNEL != linux-omarchy ]]; then
-      echo "ERROR: aarch64 builds boot linux-omarchy (got '$OMARCHY_KERNEL')" >&2
+    if [[ $COLLIE_KERNEL != linux-omarchy ]]; then
+      echo "ERROR: aarch64 builds boot linux-omarchy (got '$COLLIE_KERNEL')" >&2
       exit 1
     fi
     if [[ -d /packages && ! -f /packages/SHA256SUMS ]]; then
@@ -34,33 +34,33 @@ case "$OMARCHY_ARCH" in
       exit 1
     fi
     if [[ ! -f $online_pacman_conf ]]; then
-      echo "ERROR: aarch64 builds use the stable, rc or edge channel (got '$OMARCHY_MIRROR')" >&2
+      echo "ERROR: aarch64 builds use the stable, rc or edge channel (got '$COLLIE_MIRROR')" >&2
       exit 1
     fi
     ;;
   *)
-    echo "ERROR: unsupported OMARCHY_ARCH: $OMARCHY_ARCH" >&2
+    echo "ERROR: unsupported COLLIE_ARCH: $COLLIE_ARCH" >&2
     exit 1
     ;;
 esac
 
 # Edge, dev, and local-source ISOs install the dev packages explicitly. Those
 # package recipes track the quattro branch. This avoids relying on pacman's
-# provides=omarchy resolution and shows the real package names being tested in
+# provides=collie resolution and shows the real package names being tested in
 # the offline mirror and target install. Every other ref, the default quattro
-# build included, installs the published omarchy packages.
-case "$OMARCHY_ISO_REF" in
+# build included, installs the published collie packages.
+case "$COLLIE_ISO_REF" in
   edge|dev|local)
-    : "${OMARCHY_RUNTIME_PACKAGE:=omarchy-dev}"
-    : "${OMARCHY_SETTINGS_PACKAGE:=omarchy-settings-dev}"
+    : "${COLLIE_RUNTIME_PACKAGE:=omarchy-dev}"
+    : "${COLLIE_SETTINGS_PACKAGE:=omarchy-settings-dev}"
     ;;
   *)
-    : "${OMARCHY_RUNTIME_PACKAGE:=omarchy}"
-    : "${OMARCHY_SETTINGS_PACKAGE:=omarchy-settings}"
+    : "${COLLIE_RUNTIME_PACKAGE:=omarchy}"
+    : "${COLLIE_SETTINGS_PACKAGE:=omarchy-settings}"
     ;;
 esac
-: "${OMARCHY_NVIM_PACKAGE:=omarchy-nvim}"
-export OMARCHY_RUNTIME_PACKAGE OMARCHY_SETTINGS_PACKAGE OMARCHY_NVIM_PACKAGE
+: "${COLLIE_NVIM_PACKAGE:=collie-nvim}"
+export COLLIE_RUNTIME_PACKAGE COLLIE_SETTINGS_PACKAGE COLLIE_NVIM_PACKAGE
 
 # pacman 7 sandboxes its downloads with Landlock and fails every sync on a
 # kernel without it (Namespace's AmpereOne arm64 machines): "restricting
@@ -77,19 +77,19 @@ fi
 
 # Packages installed into the Arch container used to build the ISO.
 pacman-key --init
-# The [core] server of an online configuration: the build channel's Omarchy
+# The [core] server of an online configuration: the build channel's Collie
 # mirror, which the build container installs its own tools from.
 channel_core_server() {
   local server
   server=$(awk '/^\[core\]$/ { getline server; print server; exit }' "$1")
   if [[ $server != "Server = https://"*"mirror.omarchy.org/"* ]]; then
-    echo "ERROR: no Omarchy mirror for [core] in $1" >&2
+    echo "ERROR: no Collie mirror for [core] in $1" >&2
     return 1
   fi
   printf '%s\n' "$server"
 }
 
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   channel_pacman_conf=$online_pacman_conf
   online_pacman_conf=/tmp/pacman-online-aarch64.conf
   if [[ -d /packages ]]; then
@@ -117,7 +117,7 @@ if [[ $OMARCHY_ARCH == aarch64 ]]; then
   fi
 
   # The container image arrives pointed at Arch Linux ARM's own mirrors. Its
-  # packages come from the same place the ISO's do: Omarchy's mirror of them.
+  # packages come from the same place the ISO's do: Collie's mirror of them.
   channel_core_server "$online_pacman_conf" >/etc/pacman.d/mirrorlist || exit 1
   pacman --noconfirm -Sy archlinuxarm-keyring
   pacman-key --populate archlinuxarm
@@ -134,7 +134,7 @@ if [[ $OMARCHY_ARCH == aarch64 ]]; then
   patch --batch --forward --fuzz=0 "$mkarchiso_command" </builder/archiso-v87-aarch64-boot-efi.patch
   chmod 0755 "$mkarchiso_command"
 else
-  # The container's own tools come from the channel's Omarchy mirror too; the
+  # The container's own tools come from the channel's Collie mirror too; the
   # image's mirrors stay after it as the fallback the online configuration
   # reaches through its Include.
   core_server=$(channel_core_server "$online_pacman_conf") || exit 1
@@ -148,7 +148,7 @@ else
   mkarchiso_command=mkarchiso
 fi
 
-# The root image writer (builder/omarchy-image-write.c): build-root-image.sh
+# The root image writer (builder/collie-image-write.c): build-root-image.sh
 # packs the image with it below, and the live root ships it to write the image
 # at install time. The container's libzstd is the one the live root gets.
 # Built with Arch's own package flags (FORTIFY_SOURCE=3, stack clash
@@ -160,12 +160,12 @@ fi
   source /etc/makepkg.conf
   # shellcheck disable=SC2086 # the flag lists are meant to split
   gcc -std=gnu11 $CFLAGS -Wall -Wextra -pthread $LDFLAGS \
-    -o /usr/local/bin/omarchy-image-write /builder/omarchy-image-write.c -lzstd
+    -o /usr/local/bin/collie-image-write /builder/collie-image-write.c -lzstd
 )
 
-# Pre-import the omarchy signing key (so pacman trusts our [omarchy] repo
+# Pre-import the collie signing key (so pacman trusts our [omarchy] repo
 # during the build without keyserver lookups).
-pacman-key --add /builder/omarchy.gpg
+pacman-key --add /builder/collie.gpg
 pacman-key --lsign-key 40DFB630FF42BCFFB047046CF0134EE680CAC571
 
 # omarchy-keyring is needed inside the offline mirror too.
@@ -184,7 +184,7 @@ fi
 
 # Build locations
 build_cache_dir=/var/cache
-offline_mirror_dir="$build_cache_dir/airootfs/var/cache/omarchy/mirror/offline"
+offline_mirror_dir="$build_cache_dir/airootfs/var/cache/collie/mirror/offline"
 mkdir -p "$build_cache_dir" "$offline_mirror_dir"
 
 # Seed from the official Arch releng profile.
@@ -198,26 +198,26 @@ rm -rf "$build_cache_dir/airootfs/etc/xdg/reflector"
 
 # Bring in our archiso profile additions.
 cp -r /configs/* "$build_cache_dir/"
-install -Dm755 /usr/local/bin/omarchy-image-write "$build_cache_dir/airootfs/usr/local/bin/omarchy-image-write"
-mkdir -p "$build_cache_dir/airootfs/usr/share/omarchy-iso"
-echo "$OMARCHY_MIRROR" > "$build_cache_dir/airootfs/root/omarchy_mirror"
-echo "$OMARCHY_ISO_REF" > "$build_cache_dir/airootfs/root/omarchy_iso_ref"
-echo "$OMARCHY_ARCH" > "$build_cache_dir/airootfs/root/omarchy_arch"
+install -Dm755 /usr/local/bin/collie-image-write "$build_cache_dir/airootfs/usr/local/bin/collie-image-write"
+mkdir -p "$build_cache_dir/airootfs/usr/share/collie-iso"
+echo "$COLLIE_MIRROR" > "$build_cache_dir/airootfs/root/collie_mirror"
+echo "$COLLIE_ISO_REF" > "$build_cache_dir/airootfs/root/collie_iso_ref"
+echo "$COLLIE_ARCH" > "$build_cache_dir/airootfs/root/collie_arch"
 # The kernel the installer puts on the target: the image's own on aarch64,
 # empty on x86_64, where the installer picks per machine.
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
-  echo "$OMARCHY_KERNEL" > "$build_cache_dir/airootfs/root/omarchy_kernel"
+if [[ $COLLIE_ARCH == aarch64 ]]; then
+  echo "$COLLIE_KERNEL" > "$build_cache_dir/airootfs/root/collie_kernel"
 else
-  : > "$build_cache_dir/airootfs/root/omarchy_kernel"
+  : > "$build_cache_dir/airootfs/root/collie_kernel"
 fi
 
 # The live kernel's archiso initramfs. x86_64 also keeps linux-t2's, which
 # GRUB boots on a Mac (configs/grub/grub.cfg).
-cp "/builder/${OMARCHY_KERNEL}.preset" "$build_cache_dir/airootfs/etc/mkinitcpio.d/${OMARCHY_KERNEL}.preset"
+cp "/builder/${COLLIE_KERNEL}.preset" "$build_cache_dir/airootfs/etc/mkinitcpio.d/${COLLIE_KERNEL}.preset"
 
 # Architecture overlay on the shared profile: live kernel, initramfs hooks,
 # GRUB entries.
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   # releng's live package list is x86-flavoured; drop what arm64 cannot use.
   arm_live_excludes=(amd-ucode broadcom-wl edk2-shell hyperv intel-ucode linux memtest86+ memtest86+-efi open-vm-tools refind reflector syslinux virtualbox-guest-utils-nox)
   cp "$build_cache_dir/packages.x86_64" "$build_cache_dir/packages.aarch64"
@@ -247,13 +247,13 @@ if [[ $OMARCHY_ARCH == aarch64 ]]; then
   # mirror, which can end the script early.
   customize="$build_cache_dir/airootfs/root/customize_airootfs.sh"
   grep -qx 'set -euo pipefail' "$customize" || { echo "ERROR: $customize has no 'set -euo pipefail' line to start after" >&2; exit 1; }
-  sed -i "0,/^set -euo pipefail\$/s||set -euo pipefail\\n\\n# The Snapdragon laptops' live UKI.\\nbash /root/qualcomm-live-uki.sh $OMARCHY_KERNEL\\nrm -f /root/qualcomm-live-uki.sh|" "$customize"
+  sed -i "0,/^set -euo pipefail\$/s||set -euo pipefail\\n\\n# The Snapdragon laptops' live UKI.\\nbash /root/qualcomm-live-uki.sh $COLLIE_KERNEL\\nrm -f /root/qualcomm-live-uki.sh|" "$customize"
   # Keep the existing late-start path when early firmware is unavailable.
-  install -Dm0755 /builder/qualcomm/omarchy-live-dsp "$build_cache_dir/airootfs/usr/local/bin/omarchy-live-dsp"
-  install -Dm0644 /builder/qualcomm/omarchy-live-dsp.service "$build_cache_dir/airootfs/etc/systemd/system/omarchy-live-dsp.service"
+  install -Dm0755 /builder/qualcomm/collie-live-dsp "$build_cache_dir/airootfs/usr/local/bin/collie-live-dsp"
+  install -Dm0644 /builder/qualcomm/collie-live-dsp.service "$build_cache_dir/airootfs/etc/systemd/system/collie-live-dsp.service"
   mkdir -p "$build_cache_dir/airootfs/etc/systemd/system/multi-user.target.wants"
-  ln -sf /etc/systemd/system/omarchy-live-dsp.service "$build_cache_dir/airootfs/etc/systemd/system/multi-user.target.wants/omarchy-live-dsp.service"
-  printf '%s\n' 'file_permissions["/usr/local/bin/omarchy-live-dsp"]="0:0:755"' >>"$build_cache_dir/profiledef.sh"
+  ln -sf /etc/systemd/system/collie-live-dsp.service "$build_cache_dir/airootfs/etc/systemd/system/multi-user.target.wants/collie-live-dsp.service"
+  printf '%s\n' 'file_permissions["/usr/local/bin/collie-live-dsp"]="0:0:755"' >>"$build_cache_dir/profiledef.sh"
   install -Dm0755 /builder/qualcomm/early-startup-install "$build_cache_dir/airootfs/usr/lib/initcpio/install/qcom_early_startup"
   install -Dm0755 /builder/qualcomm/early-startup "$build_cache_dir/airootfs/usr/lib/initcpio/hooks/qcom_early_startup"
   install -Dm0644 /builder/qualcomm/early-firmware.py "$build_cache_dir/airootfs/usr/lib/initcpio/qcom-early-firmware.py"
@@ -263,73 +263,73 @@ else
   kernel_options="xe.enable_panel_replay=0 initramfs_async=0 intel_idle.states_off=0x3fc"
 fi
 for grub_config in "$build_cache_dir/grub/grub.cfg" "$build_cache_dir/grub/loopback.cfg"; do
-  configure_grub_platform "$grub_config" "$OMARCHY_ARCH"
+  configure_grub_platform "$grub_config" "$COLLIE_ARCH"
   sed -i \
-    -e "s|%KERNEL%|$OMARCHY_KERNEL|g" \
+    -e "s|%KERNEL%|$COLLIE_KERNEL|g" \
     -e "s|%BOOT_SPLASH_KERNEL_OPTIONS%|$boot_splash_kernel_options|g" \
     -e "s|%KERNEL_OPTIONS%|$kernel_options|g" \
     "$grub_config"
 done
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   # The live system's name on the network (releng's Ethernet DHCP with mDNS).
-  printf '%s\n' omarchy-n1x-rescue >"$build_cache_dir/airootfs/etc/hostname"
+  printf '%s\n' collie-n1x-rescue >"$build_cache_dir/airootfs/etc/hostname"
 fi
-if [[ -n ${OMARCHY_N1X_DEV_SSH:-} ]]; then
+if [[ -n ${COLLIE_N1X_DEV_SSH:-} ]]; then
   # DEV ONLY (--dev-ssh): key-only SSH into the live ISO and the installed
-  # system. See builder/n1x-dev-ssh/omarchy-n1x-dev-ssh; removing that
+  # system. See builder/n1x-dev-ssh/collie-n1x-dev-ssh; removing that
   # directory and this block removes it.
-  if [[ $OMARCHY_ARCH != aarch64 ]]; then
+  if [[ $COLLIE_ARCH != aarch64 ]]; then
     echo "ERROR: --dev-ssh is only for aarch64 images" >&2
     exit 1
   fi
-  install -Dm0755 /builder/n1x-dev-ssh/omarchy-n1x-dev-ssh "$build_cache_dir/airootfs/usr/local/sbin/omarchy-n1x-dev-ssh"
-  install -Dm0644 /dev-ssh/authorized_keys "$build_cache_dir/airootfs/usr/local/share/omarchy-n1x-dev-ssh/authorized_keys"
-  install -Dm0644 /builder/n1x-dev-ssh/omarchy-n1x-dev-ssh.service "$build_cache_dir/airootfs/etc/systemd/system/omarchy-n1x-dev-ssh.service"
+  install -Dm0755 /builder/n1x-dev-ssh/collie-n1x-dev-ssh "$build_cache_dir/airootfs/usr/local/sbin/collie-n1x-dev-ssh"
+  install -Dm0644 /dev-ssh/authorized_keys "$build_cache_dir/airootfs/usr/local/share/collie-n1x-dev-ssh/authorized_keys"
+  install -Dm0644 /builder/n1x-dev-ssh/collie-n1x-dev-ssh.service "$build_cache_dir/airootfs/etc/systemd/system/collie-n1x-dev-ssh.service"
   mkdir -p "$build_cache_dir/airootfs/etc/systemd/system/multi-user.target.wants"
-  ln -sf /etc/systemd/system/omarchy-n1x-dev-ssh.service "$build_cache_dir/airootfs/etc/systemd/system/multi-user.target.wants/omarchy-n1x-dev-ssh.service"
-  printf '%s\n' 'file_permissions["/usr/local/sbin/omarchy-n1x-dev-ssh"]="0:0:755"' >>"$build_cache_dir/profiledef.sh"
+  ln -sf /etc/systemd/system/collie-n1x-dev-ssh.service "$build_cache_dir/airootfs/etc/systemd/system/multi-user.target.wants/collie-n1x-dev-ssh.service"
+  printf '%s\n' 'file_permissions["/usr/local/sbin/collie-n1x-dev-ssh"]="0:0:755"' >>"$build_cache_dir/profiledef.sh"
 fi
-cat > "$build_cache_dir/airootfs/usr/share/omarchy-iso/package-targets" <<EOF
-OMARCHY_RUNTIME_PACKAGE=$OMARCHY_RUNTIME_PACKAGE
-OMARCHY_SETTINGS_PACKAGE=$OMARCHY_SETTINGS_PACKAGE
-OMARCHY_NVIM_PACKAGE=$OMARCHY_NVIM_PACKAGE
+cat > "$build_cache_dir/airootfs/usr/share/collie-iso/package-targets" <<EOF
+COLLIE_RUNTIME_PACKAGE=$COLLIE_RUNTIME_PACKAGE
+COLLIE_SETTINGS_PACKAGE=$COLLIE_SETTINGS_PACKAGE
+COLLIE_NVIM_PACKAGE=$COLLIE_NVIM_PACKAGE
 EOF
 
-if [[ ${OMARCHY_INSTALL_DEBUG:-} == "1" ]]; then
-  touch "$build_cache_dir/airootfs/usr/share/omarchy-iso/install-debug"
+if [[ ${COLLIE_INSTALL_DEBUG:-} == "1" ]]; then
+  touch "$build_cache_dir/airootfs/usr/share/collie-iso/install-debug"
   {
     echo "debug=1"
     echo "built_at=$(date -Is)"
-    echo "ref=$OMARCHY_ISO_REF"
-    echo "mirror=$OMARCHY_MIRROR"
-    echo "runtime_package=$OMARCHY_RUNTIME_PACKAGE"
-    echo "settings_package=$OMARCHY_SETTINGS_PACKAGE"
-    echo "nvim_package=$OMARCHY_NVIM_PACKAGE"
-    if [[ -d /omarchy-source ]]; then
-      echo "omarchy_source=/omarchy-source"
-      git -c safe.directory=/omarchy-source -C /omarchy-source rev-parse HEAD 2>/dev/null | sed 's/^/omarchy_commit=/' || true
-      git -c safe.directory=/omarchy-source -C /omarchy-source status --short 2>/dev/null | sed 's/^/omarchy_status=/' || true
+    echo "ref=$COLLIE_ISO_REF"
+    echo "mirror=$COLLIE_MIRROR"
+    echo "runtime_package=$COLLIE_RUNTIME_PACKAGE"
+    echo "settings_package=$COLLIE_SETTINGS_PACKAGE"
+    echo "nvim_package=$COLLIE_NVIM_PACKAGE"
+    if [[ -d /collie-source ]]; then
+      echo "collie_source=/collie-source"
+      git -c safe.directory=/collie-source -C /collie-source rev-parse HEAD 2>/dev/null | sed 's/^/collie_commit=/' || true
+      git -c safe.directory=/collie-source -C /collie-source status --short 2>/dev/null | sed 's/^/collie_status=/' || true
     fi
     if [[ -d /omarchy-pkgs ]]; then
-      echo "omarchy_pkgs_source=/omarchy-pkgs"
-      git -c safe.directory=/omarchy-pkgs -C /omarchy-pkgs rev-parse HEAD 2>/dev/null | sed 's/^/omarchy_pkgs_commit=/' || true
-      git -c safe.directory=/omarchy-pkgs -C /omarchy-pkgs status --short 2>/dev/null | sed 's/^/omarchy_pkgs_status=/' || true
+      echo "collie_pkgs_source=/omarchy-pkgs"
+      git -c safe.directory=/omarchy-pkgs -C /omarchy-pkgs rev-parse HEAD 2>/dev/null | sed 's/^/collie_pkgs_commit=/' || true
+      git -c safe.directory=/omarchy-pkgs -C /omarchy-pkgs status --short 2>/dev/null | sed 's/^/collie_pkgs_status=/' || true
     fi
-  } > "$build_cache_dir/airootfs/usr/share/omarchy-iso/build-info"
+  } > "$build_cache_dir/airootfs/usr/share/collie-iso/build-info"
 fi
 
-# When --local-source is in effect, build omarchy* from the mounted source
+# When --local-source is in effect, build collie* from the mounted source
 # trees and drop them in the offline mirror. Otherwise pacman -Syw below
-# downloads the published versions from the omarchy network mirror.
-if [[ -d /omarchy-source && -d /omarchy-pkgs ]]; then
-  bash /builder/build-omarchy-packages.sh "$offline_mirror_dir"
-  LOCAL_OMARCHY_BUILD=1
+# downloads the published versions from the collie network mirror.
+if [[ -d /collie-source && -d /omarchy-pkgs ]]; then
+  bash /builder/build-collie-packages.sh "$offline_mirror_dir"
+  LOCAL_COLLIE_BUILD=1
   # A rebuild of the same revision produces the same filename with different
   # bytes. pacman consults /var/cache/pacman/pkg (the host's cache, kept across
   # --keep-pkg-cache builds) before the mirror, and a stale copy from an
   # earlier build fails the checksum against the mirror's fresh db.
   for local_package_name in \
-    "$OMARCHY_RUNTIME_PACKAGE" "$OMARCHY_SETTINGS_PACKAGE" "$OMARCHY_NVIM_PACKAGE"; do
+    "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE"; do
     rm -f /var/cache/pacman/pkg/"$local_package_name"-*.pkg.tar.zst{,.sig}
   done
 
@@ -338,11 +338,11 @@ if [[ -d /omarchy-source && -d /omarchy-pkgs ]]; then
   # hooks and Limine drop-ins. The installer adds the Limine/Snapper stack
   # itself on aarch64, where the runtime does not depend on it because Apple
   # Silicon boots differently.
-  if [[ $OMARCHY_ARCH == aarch64 ]]; then
-    settings_archive=$(find "$offline_mirror_dir" -maxdepth 1 -name "$OMARCHY_SETTINGS_PACKAGE-[0-9]*.pkg.tar.*" ! -name '*.sig' | head -1)
-    for required in usr/share/omarchy/default/limine/default.conf etc/mkinitcpio.conf.d/omarchy_hooks.conf etc/limine-entry-tool.d/omarchy-defaults.conf; do
+  if [[ $COLLIE_ARCH == aarch64 ]]; then
+    settings_archive=$(find "$offline_mirror_dir" -maxdepth 1 -name "$COLLIE_SETTINGS_PACKAGE-[0-9]*.pkg.tar.*" ! -name '*.sig' | head -1)
+    for required in usr/share/collie/default/limine/default.conf etc/mkinitcpio.conf.d/collie_hooks.conf etc/limine-entry-tool.d/collie-defaults.conf; do
       if ! bsdtar -tf "$settings_archive" "$required" >/dev/null 2>&1; then
-        echo "ERROR: ${settings_archive:-$OMARCHY_SETTINGS_PACKAGE} lacks $required, which an aarch64 install needs" >&2
+        echo "ERROR: ${settings_archive:-$COLLIE_SETTINGS_PACKAGE} lacks $required, which an aarch64 install needs" >&2
         exit 1
       fi
     done
@@ -351,19 +351,19 @@ fi
 
 # Packages installed into the live ISO environment itself (NOT the target system).
 # The selected omarchy-settings package is needed here so its post_install hook
-# drops Omarchy's plymouthd.conf into /etc/plymouth before mkarchiso builds the
+# drops Collie's plymouthd.conf into /etc/plymouth before mkarchiso builds the
 # live initramfs.
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   # Plymouth stays out of the live initramfs (archiso-aarch64-mkinitcpio.sh);
   # openssh and pciutils serve the recovery entry and remote debugging.
   # For the Snapdragon laptops: ukify builds the live UKI, and the installer
   # saves a laptop's signed firmware from Windows with qcom-firmware-extract.
-  arch_packages=("$OMARCHY_KERNEL" archlinuxarm-keyring git gum jq openssl openssh pciutils plymouth ttfx terminus-font tzupdate omarchy-keyring "$OMARCHY_SETTINGS_PACKAGE" lvm2 cryptsetup parted systemd-ukify linux-firmware-qcom qcom-firmware-extract python)
+  arch_packages=("$COLLIE_KERNEL" archlinuxarm-keyring git gum jq openssl openssh pciutils plymouth ttfx terminus-font tzupdate omarchy-keyring "$COLLIE_SETTINGS_PACKAGE" lvm2 cryptsetup parted systemd-ukify linux-firmware-qcom qcom-firmware-extract python)
 else
   # linux-t2 is the live kernel on a Mac (configs/grub/grub.cfg).
-  arch_packages=("$OMARCHY_KERNEL" linux-t2 git gum jq openssl plymouth ttfx terminus-font tzupdate omarchy-keyring "$OMARCHY_SETTINGS_PACKAGE" lvm2 cryptsetup parted)
+  arch_packages=("$COLLIE_KERNEL" linux-t2 git gum jq openssl plymouth ttfx terminus-font tzupdate omarchy-keyring "$COLLIE_SETTINGS_PACKAGE" lvm2 cryptsetup parted)
 fi
-live_packages_file="$build_cache_dir/packages.$OMARCHY_ARCH"
+live_packages_file="$build_cache_dir/packages.$COLLIE_ARCH"
 printf '%s\n' "${arch_packages[@]}" >> "$live_packages_file"
 
 # The live ISO boots linux-omarchy, or linux-t2 on a Mac, so stock linux is a
@@ -379,47 +379,47 @@ printf '%s\n' "${arch_packages[@]}" >> "$live_packages_file"
 sed -i -E '/^(linux|broadcom-wl)$/d' "$live_packages_file"
 
 # Build the offline mirror: everything pacstrap might want during the target
-# install. With --local-source, the omarchy* packages we just built are
+# install. With --local-source, the collie* packages we just built are
 # already in the mirror and we filter them out below. Without it, pacman -Syw
 # pulls the published omarchy* from the network mirror like any other package.
-if [[ -d /omarchy-source ]]; then
-  base_pkg_lists=(/omarchy-source/install/omarchy-base.packages /omarchy-source/install/omarchy-other.packages)
-  setup_form=/omarchy-source/install/provisioning/setup-form.sh
-  progress_icon=/omarchy-source/install/provisioning/progress-icon.sh
-  mise_work=/omarchy-source/install/user/mise-work.sh
+if [[ -d /collie-source ]]; then
+  base_pkg_lists=(/collie-source/install/collie-base.packages /collie-source/install/collie-other.packages)
+  setup_form=/collie-source/install/provisioning/setup-form.sh
+  progress_icon=/collie-source/install/provisioning/progress-icon.sh
+  mise_work=/collie-source/install/user/mise-work.sh
 else
-  # Pull the same package lists out of the freshly-downloaded Omarchy runtime
+  # Pull the same package lists out of the freshly-downloaded Collie runtime
   # package so we don't need a local checkout in the non-local-source path.
-  bootstrap_cache_dir=/tmp/omarchy-pkg-bootstrap
-  rm -rf "$bootstrap_cache_dir" /tmp/offlinedb-bootstrap /tmp/omarchy-pkglists
+  bootstrap_cache_dir=/tmp/collie-pkg-bootstrap
+  rm -rf "$bootstrap_cache_dir" /tmp/offlinedb-bootstrap /tmp/collie-pkglists
   mkdir -p "$bootstrap_cache_dir" /tmp/offlinedb-bootstrap
-  pacman --config "$online_pacman_conf" --noconfirm -Syw "$OMARCHY_RUNTIME_PACKAGE" --cachedir "$bootstrap_cache_dir" --dbpath /tmp/offlinedb-bootstrap >/dev/null
-  omarchy_pkg=$(find "$bootstrap_cache_dir" -maxdepth 1 -type f -name "$OMARCHY_RUNTIME_PACKAGE-*.pkg.tar.zst" | sort | head -1)
-  if [[ -z $omarchy_pkg ]]; then
-    echo "ERROR: downloaded package for $OMARCHY_RUNTIME_PACKAGE not found in $bootstrap_cache_dir" >&2
+  pacman --config "$online_pacman_conf" --noconfirm -Syw "$COLLIE_RUNTIME_PACKAGE" --cachedir "$bootstrap_cache_dir" --dbpath /tmp/offlinedb-bootstrap >/dev/null
+  collie_pkg=$(find "$bootstrap_cache_dir" -maxdepth 1 -type f -name "$COLLIE_RUNTIME_PACKAGE-*.pkg.tar.zst" | sort | head -1)
+  if [[ -z $collie_pkg ]]; then
+    echo "ERROR: downloaded package for $COLLIE_RUNTIME_PACKAGE not found in $bootstrap_cache_dir" >&2
     exit 1
   fi
-  mkdir -p /tmp/omarchy-pkglists
-  bsdtar -xf "$omarchy_pkg" -C /tmp/omarchy-pkglists usr/share/omarchy/install/omarchy-base.packages usr/share/omarchy/install/omarchy-other.packages
-  base_pkg_lists=(/tmp/omarchy-pkglists/usr/share/omarchy/install/omarchy-base.packages /tmp/omarchy-pkglists/usr/share/omarchy/install/omarchy-other.packages)
+  mkdir -p /tmp/collie-pkglists
+  bsdtar -xf "$collie_pkg" -C /tmp/collie-pkglists usr/share/collie/install/collie-base.packages usr/share/collie/install/collie-other.packages
+  base_pkg_lists=(/tmp/collie-pkglists/usr/share/collie/install/collie-base.packages /tmp/collie-pkglists/usr/share/collie/install/collie-other.packages)
   # Extracted on its own, tolerating a miss: bsdtar exits non-zero for a member
   # it can't find, so asking for this alongside the package lists would abort the
   # build here (set -e) with a bare "Not found in archive" instead of the
   # actionable error below.
-  bsdtar -xf "$omarchy_pkg" -C /tmp/omarchy-pkglists usr/share/omarchy/install/provisioning/setup-form.sh 2>/dev/null || true
-  setup_form=/tmp/omarchy-pkglists/usr/share/omarchy/install/provisioning/setup-form.sh
-  bsdtar -xf "$omarchy_pkg" -C /tmp/omarchy-pkglists usr/share/omarchy/install/provisioning/progress-icon.sh 2>/dev/null || true
-  progress_icon=/tmp/omarchy-pkglists/usr/share/omarchy/install/provisioning/progress-icon.sh
-  bsdtar -xf "$omarchy_pkg" -C /tmp/omarchy-pkglists usr/share/omarchy/install/user/mise-work.sh 2>/dev/null || true
-  mise_work=/tmp/omarchy-pkglists/usr/share/omarchy/install/user/mise-work.sh
+  bsdtar -xf "$collie_pkg" -C /tmp/collie-pkglists usr/share/collie/install/provisioning/setup-form.sh 2>/dev/null || true
+  setup_form=/tmp/collie-pkglists/usr/share/collie/install/provisioning/setup-form.sh
+  bsdtar -xf "$collie_pkg" -C /tmp/collie-pkglists usr/share/collie/install/provisioning/progress-icon.sh 2>/dev/null || true
+  progress_icon=/tmp/collie-pkglists/usr/share/collie/install/provisioning/progress-icon.sh
+  bsdtar -xf "$collie_pkg" -C /tmp/collie-pkglists usr/share/collie/install/user/mise-work.sh 2>/dev/null || true
+  mise_work=/tmp/collie-pkglists/usr/share/collie/install/user/mise-work.sh
   # The aarch64 list, each platform's own and the x86_64-only one. Runtimes
   # from before the platform lists ship none, so each is optional.
-  for platform_list in 'omarchy-aarch64*.packages' omarchy-x86_64-only.packages; do
-    bsdtar -xf "$omarchy_pkg" -C /tmp/omarchy-pkglists "usr/share/omarchy/install/$platform_list" 2>/dev/null || true
+  for platform_list in 'collie-aarch64*.packages' collie-x86_64-only.packages; do
+    bsdtar -xf "$collie_pkg" -C /tmp/collie-pkglists "usr/share/collie/install/$platform_list" 2>/dev/null || true
   done
   # The package installs its commands to /usr/bin and links them from
-  # /usr/share/omarchy/bin, so the detector itself is the one in usr/bin.
-  bsdtar -xf "$omarchy_pkg" -C /tmp/omarchy-pkglists usr/bin/omarchy-hw-platform 2>/dev/null || true
+  # /usr/share/collie/bin, so the detector itself is the one in usr/bin.
+  bsdtar -xf "$collie_pkg" -C /tmp/collie-pkglists usr/bin/collie-hw-platform 2>/dev/null || true
 fi
 
 # One aarch64 image serves every board, so the runtime it installs has to tell
@@ -428,16 +428,16 @@ fi
 # list: a Snapdragon laptop installed from it would have no device tree to boot
 # with, and a GB10 or an N1x would get none of its own packages.
 platform_lists=()
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
-  for required in bin/omarchy-hw-platform install/hardware/qualcomm/dtb-uki.sh \
-    install/omarchy-aarch64-qualcomm.packages install/omarchy-aarch64-n1x.packages \
-    install/omarchy-aarch64-gb10.packages; do
-    if [[ -d /omarchy-source ]]; then
-      [[ -f /omarchy-source/$required ]]
+if [[ $COLLIE_ARCH == aarch64 ]]; then
+  for required in bin/collie-hw-platform install/hardware/qualcomm/dtb-uki.sh \
+    install/collie-aarch64-qualcomm.packages install/collie-aarch64-n1x.packages \
+    install/collie-aarch64-gb10.packages; do
+    if [[ -d /collie-source ]]; then
+      [[ -f /collie-source/$required ]]
     else
-      bsdtar -tf "$omarchy_pkg" "usr/share/omarchy/$required" >/dev/null 2>&1
+      bsdtar -tf "$collie_pkg" "usr/share/collie/$required" >/dev/null 2>&1
     fi || {
-      echo "ERROR: the Omarchy runtime for this image ships no $required." >&2
+      echo "ERROR: the Collie runtime for this image ships no $required." >&2
       echo "       The installer asks the runtime's detector which board it is on and installs" >&2
       echo "       that platform's packages, and a Snapdragon laptop boots only with the device" >&2
       echo "       trees its hardware setup lists." >&2
@@ -445,72 +445,72 @@ if [[ $OMARCHY_ARCH == aarch64 ]]; then
       exit 1
     }
   done
-  if [[ -d /omarchy-source ]]; then
-    hw_platform=/omarchy-source/bin/omarchy-hw-platform
+  if [[ -d /collie-source ]]; then
+    hw_platform=/collie-source/bin/collie-hw-platform
   else
-    hw_platform=/tmp/omarchy-pkglists/usr/bin/omarchy-hw-platform
+    hw_platform=/tmp/collie-pkglists/usr/bin/collie-hw-platform
   fi
 fi
 
-# aarch64 takes the runtime's own default sets, as omarchy-pkg-defaults composes
+# aarch64 takes the runtime's own default sets, as collie-pkg-defaults composes
 # them: the base list, then the aarch64 additions (zram-generator, rtkit) and a
 # platform's own (the N1x kernel and NVIDIA stack, say), minus the base packages
 # with no aarch64 build anywhere (its x86_64-only list). The installer asks the
 # machine which platform it is on and installs that platform's set, so the image
 # carries one list per platform and the plain aarch64 one for every other
 # machine. Apple Silicon is installed from macOS, never from this image.
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   pkglist_dir=$(dirname "${base_pkg_lists[0]}")
   aarch64_default_set() {
     grep -hv '^#\|^$' "$@" | sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' |
-      awk -v skips="$pkglist_dir/omarchy-x86_64-only.packages" '
+      awk -v skips="$pkglist_dir/collie-x86_64-only.packages" '
         BEGIN { while ((getline line < skips) > 0) { sub(/[ \t]*#.*$/, "", line); if (line != "") skip[line] = 1 } }
         skip[$0] { print "aarch64: excluding " $0 ", which the runtime marks x86_64-only" > "/dev/stderr"; next }
         !seen[$0]++'
   }
   aarch64_lists=("${base_pkg_lists[0]}")
-  [[ ! -f $pkglist_dir/omarchy-aarch64.packages ]] || aarch64_lists+=("$pkglist_dir/omarchy-aarch64.packages")
-  platform_base_dir=/tmp/omarchy-platform-base
+  [[ ! -f $pkglist_dir/collie-aarch64.packages ]] || aarch64_lists+=("$pkglist_dir/collie-aarch64.packages")
+  platform_base_dir=/tmp/collie-platform-base
   rm -rf "$platform_base_dir"
   mkdir -p "$platform_base_dir"
-  for platform_list in "$pkglist_dir"/omarchy-aarch64-*.packages; do
-    [[ -f $platform_list && $platform_list != */omarchy-aarch64-apple.packages ]] || continue
+  for platform_list in "$pkglist_dir"/collie-aarch64-*.packages; do
+    [[ -f $platform_list && $platform_list != */collie-aarch64-apple.packages ]] || continue
     platform_lists+=("$platform_list")
-    platform=${platform_list##*/omarchy-}
-    aarch64_default_set "${aarch64_lists[@]}" "$platform_list" 2>/dev/null >"$platform_base_dir/omarchy-base.${platform%.packages}.packages"
+    platform=${platform_list##*/collie-}
+    aarch64_default_set "${aarch64_lists[@]}" "$platform_list" 2>/dev/null >"$platform_base_dir/collie-base.${platform%.packages}.packages"
   done
-  aarch64_base_list=/tmp/omarchy-aarch64-base.packages
+  aarch64_base_list=/tmp/collie-aarch64-base.packages
   aarch64_default_set "${aarch64_lists[@]}" >"$aarch64_base_list"
   base_pkg_lists[0]=$aarch64_base_list
 fi
 
-mkdir -p "$build_cache_dir/airootfs/usr/share/omarchy-iso"
-cp "${base_pkg_lists[0]}" "$build_cache_dir/airootfs/usr/share/omarchy-iso/omarchy-base.packages"
-cp "${base_pkg_lists[1]}" "$build_cache_dir/airootfs/usr/share/omarchy-iso/omarchy-other.packages"
-shipped_lists=(omarchy-base.packages omarchy-other.packages)
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+mkdir -p "$build_cache_dir/airootfs/usr/share/collie-iso"
+cp "${base_pkg_lists[0]}" "$build_cache_dir/airootfs/usr/share/collie-iso/collie-base.packages"
+cp "${base_pkg_lists[1]}" "$build_cache_dir/airootfs/usr/share/collie-iso/collie-other.packages"
+shipped_lists=(collie-base.packages collie-other.packages)
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   # The runtime's own detector, which stands alone wherever a copy of it is
   # shipped, and the default set of each platform it can name.
-  install -Dm0644 "$hw_platform" "$build_cache_dir/airootfs/usr/share/omarchy-iso/omarchy-hw-platform"
-  for platform_base in "$platform_base_dir"/omarchy-base.*.packages; do
+  install -Dm0644 "$hw_platform" "$build_cache_dir/airootfs/usr/share/collie-iso/collie-hw-platform"
+  for platform_base in "$platform_base_dir"/collie-base.*.packages; do
     [[ -f $platform_base ]] || continue
-    cp "$platform_base" "$build_cache_dir/airootfs/usr/share/omarchy-iso/"
+    cp "$platform_base" "$build_cache_dir/airootfs/usr/share/collie-iso/"
     shipped_lists+=("${platform_base##*/}")
   done
 fi
 # The installer reads the shipped copies to pacstrap the target, so on aarch64
 # they must carry the same substitutions the offline mirror was built with.
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   source /builder/aarch64-package-filter.sh
   for shipped_list in "${shipped_lists[@]}"; do
-    shipped_path="$build_cache_dir/airootfs/usr/share/omarchy-iso/$shipped_list"
+    shipped_path="$build_cache_dir/airootfs/usr/share/collie-iso/$shipped_list"
     mapfile -t shipped_packages < <(grep -hv '^#\|^$' "$shipped_path")
-    filter_aarch64_packages "$OMARCHY_KERNEL" "${shipped_packages[@]}" > "$shipped_path"
+    filter_aarch64_packages "$COLLIE_KERNEL" "${shipped_packages[@]}" > "$shipped_path"
   done
   # archinstall's list is only read at build time; keep a filtered copy for the
   # resolution below.
   mapfile -t archinstall_packages < <(grep -hv '^#\|^$' /builder/archinstall.packages)
-  filter_aarch64_packages "$OMARCHY_KERNEL" "${archinstall_packages[@]}" > /tmp/archinstall.packages
+  filter_aarch64_packages "$COLLIE_KERNEL" "${archinstall_packages[@]}" > /tmp/archinstall.packages
   archinstall_packages_file=/tmp/archinstall.packages
 else
   archinstall_packages_file=/builder/archinstall.packages
@@ -521,11 +521,11 @@ fi
 # disagree. A runtime predating the split ships no such file, which would leave
 # the configurator with no prompts at all.
 if [[ ! -f $setup_form ]]; then
-  if [[ -d /omarchy-source ]]; then
+  if [[ -d /collie-source ]]; then
     echo "ERROR: the --local-source checkout ships no install/provisioning/setup-form.sh" >&2
     remedy="Update the checkout to a revision carrying the shared setup form."
   else
-    echo "ERROR: $OMARCHY_RUNTIME_PACKAGE does not ship install/provisioning/setup-form.sh" >&2
+    echo "ERROR: $COLLIE_RUNTIME_PACKAGE does not ship install/provisioning/setup-form.sh" >&2
     remedy="Publish a runtime carrying the shared setup form, or build with --local-source against a checkout that has it."
   fi
   echo "       The configurator sources its prompts from that file, so this ISO" >&2
@@ -533,18 +533,18 @@ if [[ ! -f $setup_form ]]; then
   echo "       $remedy" >&2
   exit 1
 fi
-cp "$setup_form" "$build_cache_dir/airootfs/usr/share/omarchy-iso/setup-form.sh"
+cp "$setup_form" "$build_cache_dir/airootfs/usr/share/collie-iso/setup-form.sh"
 
 # The install progress screen comes from the same runtime, so the install and
 # the first-boot setup that finishes a deferred install draw the same screen. A
 # runtime predating the split ships no such file, which would leave the install
 # dashboard with nothing to draw.
 if [[ ! -f $progress_icon ]]; then
-  if [[ -d /omarchy-source ]]; then
+  if [[ -d /collie-source ]]; then
     echo "ERROR: the --local-source checkout ships no install/provisioning/progress-icon.sh" >&2
     remedy="Update the checkout to a revision carrying the shared progress screen."
   else
-    echo "ERROR: $OMARCHY_RUNTIME_PACKAGE does not ship install/provisioning/progress-icon.sh" >&2
+    echo "ERROR: $COLLIE_RUNTIME_PACKAGE does not ship install/provisioning/progress-icon.sh" >&2
     remedy="Publish a runtime carrying the shared progress screen, or build with --local-source against a checkout that has it."
   fi
   echo "       The install dashboard draws its progress with that file, so this ISO" >&2
@@ -552,9 +552,9 @@ if [[ ! -f $progress_icon ]]; then
   echo "       $remedy" >&2
   exit 1
 fi
-cp "$progress_icon" "$build_cache_dir/airootfs/usr/share/omarchy-iso/progress-icon.sh"
+cp "$progress_icon" "$build_cache_dir/airootfs/usr/share/collie-iso/progress-icon.sh"
 
-# Omarchy installs Node lazily through mise since omacom/omarchy#15876. A
+# Collie installs Node lazily through mise since omacom/omarchy#15876. A
 # runtime from before it unpacks a bundled Node tarball during setup and stops
 # the install without one, so it still gets the build for its architecture.
 # Remove this once every channel's runtime installs Node lazily.
@@ -566,7 +566,7 @@ if grep -qF /opt/packages "$mise_work" 2>/dev/null; then
   NODE_DIST="https://nodejs.org/dist"
   NODE_SHASUMS=$(curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 "$NODE_DIST/latest/SHASUMS256.txt")
   node_platform=linux-x64
-  [[ $OMARCHY_ARCH == aarch64 ]] && node_platform=linux-arm64
+  [[ $COLLIE_ARCH == aarch64 ]] && node_platform=linux-arm64
   if ! IFS=$'\t' read -r NODE_FILENAME NODE_SHA < <(select_node_release "$node_platform" <<<"$NODE_SHASUMS"); then
     echo "ERROR: could not find Node.js $node_platform release metadata" >&2
     exit 1
@@ -588,17 +588,17 @@ mapfile -t all_packages < <(
     # The root image is pacstrapped from the pruned mirror, so its packages
     # must be in the keep-set even when nothing in the lists depends on them.
     grep -hv '^#\|^$' /builder/image.packages
-    # Always include the selected Omarchy packages so the target install can
+    # Always include the selected Collie packages so the target install can
     # find the runtime and companion packages in the offline mirror.
-    printf '%s\n' "$OMARCHY_RUNTIME_PACKAGE" "$OMARCHY_SETTINGS_PACKAGE" "$OMARCHY_NVIM_PACKAGE"
+    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE"
   } | sort -u
 )
 
 # Arch dropped the prebuilt broadcom-wl on 2026-09-02 and rebuilt broadcom-wl-dkms
 # with replaces=(broadcom-wl). A replaces entry only helps upgrades of an already
 # installed package; as an explicit pacman target the old name now fails with
-# "target not found". Published Omarchy runtime packages that predate the rename
-# still list it in omarchy-other.packages, so map it here until every channel
+# "target not found". Published Collie runtime packages that predate the rename
+# still list it in collie-other.packages, so map it here until every channel
 # ships a runtime that names broadcom-wl-dkms itself.
 # apple-bcm-firmware, which arch-mact2 dropped for apple-bcm-firmware-fetcher,
 # is not mapped here: renamed_packages below follows it, into the
@@ -620,28 +620,28 @@ mapfile -t target_packages < <(
     grep -hv '^#\|^$' "${base_pkg_lists[@]}" "${platform_lists[@]}"
     grep -hv '^#\|^$' "$archinstall_packages_file"
     grep -hv '^#\|^$' /builder/image.packages
-    printf '%s\n' "$OMARCHY_RUNTIME_PACKAGE" "$OMARCHY_SETTINGS_PACKAGE" "$OMARCHY_NVIM_PACKAGE"
+    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE"
   } | sed 's/^broadcom-wl$/broadcom-wl-dkms/' | sort -u
 )
 
-# x86_64: Omarchy's optional list also names packages for aarch64 boards,
+# x86_64: Collie's optional list also names packages for aarch64 boards,
 # which have no x86_64 build. Each exclusion is explicit and printed, and the
 # list is a file of its own so it can be read without parsing this script.
-if [[ $OMARCHY_ARCH == x86_64 ]]; then
+if [[ $COLLIE_ARCH == x86_64 ]]; then
   mapfile -t aarch64_only < <(grep -hv '^#\|^$' /builder/aarch64-only.packages)
   printf 'x86_64: excluding aarch64-only package %s\n' "${aarch64_only[@]}" >&2
   mapfile -t all_packages < <(printf '%s\n' "${all_packages[@]}" | grep -Fxv -f <(printf '%s\n' "${aarch64_only[@]}"))
   mapfile -t target_packages < <(printf '%s\n' "${target_packages[@]}" | grep -Fxv -f <(printf '%s\n' "${aarch64_only[@]}"))
 fi
 
-# aarch64: the Omarchy manifests are written for x86_64 machines. Swap the
+# aarch64: the Collie manifests are written for x86_64 machines. Swap the
 # kernel for the platform kernel and drop packages that only exist for x86.
 # Every exclusion is explicit and printed; anything else missing from the
 # mirror still fails the build below.
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   source /builder/aarch64-package-filter.sh
-  mapfile -t all_packages < <(filter_aarch64_packages "$OMARCHY_KERNEL" "${all_packages[@]}")
-  mapfile -t target_packages < <(filter_aarch64_packages "$OMARCHY_KERNEL" "${target_packages[@]}")
+  mapfile -t all_packages < <(filter_aarch64_packages "$COLLIE_KERNEL" "${all_packages[@]}")
+  mapfile -t target_packages < <(filter_aarch64_packages "$COLLIE_KERNEL" "${target_packages[@]}")
   # The kernel pair and the Limine/Snapper stack the installer adds on aarch64,
   # and everything in a package bundle (the ASUS ProArt P14's amplifier
   # firmware, say). Each platform's own packages come from its list above.
@@ -653,22 +653,22 @@ if [[ $OMARCHY_ARCH == aarch64 ]]; then
       done
     )
   fi
-  all_packages+=("$OMARCHY_KERNEL" "$OMARCHY_KERNEL-headers" "${platform_packages[@]}" archlinuxarm-keyring limine limine-mkinitcpio-hook limine-snapper-sync snapper pciutils)
+  all_packages+=("$COLLIE_KERNEL" "$COLLIE_KERNEL-headers" "${platform_packages[@]}" archlinuxarm-keyring limine limine-mkinitcpio-hook limine-snapper-sync snapper pciutils)
   mapfile -t all_packages < <(printf '%s\n' "${all_packages[@]}" | sort -u)
   # An aarch64 install asks for the same ones.
-  target_packages+=("$OMARCHY_KERNEL" "$OMARCHY_KERNEL-headers" "${platform_packages[@]}" archlinuxarm-keyring limine limine-mkinitcpio-hook limine-snapper-sync snapper)
+  target_packages+=("$COLLIE_KERNEL" "$COLLIE_KERNEL-headers" "${platform_packages[@]}" archlinuxarm-keyring limine limine-mkinitcpio-hook limine-snapper-sync snapper)
   mapfile -t target_packages < <(printf '%s\n' "${target_packages[@]}" | sort -u)
 fi
 
 # Leaving the local builds out of the download also leaves out what they
 # depend on, so a dependency no package list names (omarchy-dev's
-# omarchy-themes-intros) would be missing from the mirror. Name each one,
+# collie-themes-intros) would be missing from the mirror. Name each one,
 # except what the local builds provide themselves (omarchy-settings-dev's
-# omarchy-security-functions): asked for by name, pacman would fetch the
+# collie-security-functions): asked for by name, pacman would fetch the
 # published provider on top of the local build.
-if [[ -n ${LOCAL_OMARCHY_BUILD:-} ]]; then
+if [[ -n ${LOCAL_COLLIE_BUILD:-} ]]; then
   local_pkginfo=$(
-    for pkg in "$OMARCHY_RUNTIME_PACKAGE" "$OMARCHY_SETTINGS_PACKAGE" "$OMARCHY_NVIM_PACKAGE"; do
+    for pkg in "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE"; do
       for archive in "$offline_mirror_dir/$pkg"-[0-9]*.pkg.tar.*; do
         [[ $archive == *.sig ]] || bsdtar -xOf "$archive" .PKGINFO
       done
@@ -684,25 +684,25 @@ if [[ -n ${LOCAL_OMARCHY_BUILD:-} ]]; then
   mapfile -t target_packages < <(printf '%s\n' "${target_packages[@]}" "${local_depends[@]}" | sort -u)
 fi
 
-# With --local-source we already built these omarchy* packages directly into
+# With --local-source we already built these collie* packages directly into
 # the mirror; strip them from the pacman -Syw list so it doesn't try to fetch
 # the published versions on top.
-if [[ -n ${LOCAL_OMARCHY_BUILD:-} ]]; then
+if [[ -n ${LOCAL_COLLIE_BUILD:-} ]]; then
   mapfile -t all_packages < <(
     printf '%s\n' "${all_packages[@]}" |
       grep -Fxv \
-        -e "$OMARCHY_RUNTIME_PACKAGE" \
-        -e "$OMARCHY_SETTINGS_PACKAGE" \
-        -e "$OMARCHY_NVIM_PACKAGE" || true
+        -e "$COLLIE_RUNTIME_PACKAGE" \
+        -e "$COLLIE_SETTINGS_PACKAGE" \
+        -e "$COLLIE_NVIM_PACKAGE" || true
   )
   # They are in the image, so never shipped; and the online db the closure is
   # resolved against does not know the local builds.
   mapfile -t target_packages < <(
     printf '%s\n' "${target_packages[@]}" |
       grep -Fxv \
-        -e "$OMARCHY_RUNTIME_PACKAGE" \
-        -e "$OMARCHY_SETTINGS_PACKAGE" \
-        -e "$OMARCHY_NVIM_PACKAGE" || true
+        -e "$COLLIE_RUNTIME_PACKAGE" \
+        -e "$COLLIE_SETTINGS_PACKAGE" \
+        -e "$COLLIE_NVIM_PACKAGE" || true
   )
 fi
 
@@ -711,15 +711,15 @@ mkdir -p /tmp/offlinedb
 # pacman -Syw fail as a whole ("target not found"), and the offline mirror is
 # never written. Third-party repositories do this without notice: arch-mact2
 # replaced apple-bcm-firmware with apple-bcm-firmware-fetcher (a different
-# mechanism, it conflicts with the old name) while the published omarchy
+# mechanism, it conflicts with the old name) while the published collie
 # package list still names the old one. Sync the databases once, drop the
 # names nothing offers, and warn. A builder cache that still holds the old
 # file hides the failure.
 pacman --config "$online_pacman_conf" --noconfirm -Sy --dbpath /tmp/offlinedb >/dev/null
 # aarch64: every Snapdragon OEM firmware package, found by the
-# qcom-firmware-<folder> name it provides. Omarchy installs a machine's
+# qcom-firmware-<folder> name it provides. Collie installs a machine's
 # package by that name during the install, so the mirror carries all of them.
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   source /builder/qcom-oem-firmware.sh
   mapfile -t qcom_oem_firmware < <(qcom_oem_firmware_packages /tmp/offlinedb/sync/*.db)
   echo "aarch64: adding ${#qcom_oem_firmware[@]} Snapdragon OEM firmware packages: ${qcom_oem_firmware[*]}" >&2
@@ -746,8 +746,8 @@ fi
 declare -A renamed_packages=(
   [apple-bcm-firmware]=apple-bcm-firmware-fetcher
 )
-renamed_list="$build_cache_dir/airootfs/usr/share/omarchy-iso/renamed-packages.txt"
-unresolved_list="$build_cache_dir/airootfs/usr/share/omarchy-iso/unresolved-packages.txt"
+renamed_list="$build_cache_dir/airootfs/usr/share/collie-iso/renamed-packages.txt"
+unresolved_list="$build_cache_dir/airootfs/usr/share/collie-iso/unresolved-packages.txt"
 rm -f "$renamed_list" "$unresolved_list"
 still_unresolved=()
 for p in "${unresolved[@]}"; do
@@ -774,7 +774,7 @@ fi
 if (( ${#unresolved[@]} )); then
   echo "WARNING: dropping package names no configured repository offers: ${unresolved[*]}" >&2
   mapfile -t all_packages < <(printf '%s\n' "${all_packages[@]}" | grep -Fxv -f <(printf '%s\n' "${unresolved[@]}"))
-  printf '%s\n' "${unresolved[@]}" > "$build_cache_dir/airootfs/usr/share/omarchy-iso/unresolved-packages.txt"
+  printf '%s\n' "${unresolved[@]}" > "$build_cache_dir/airootfs/usr/share/collie-iso/unresolved-packages.txt"
 fi
 download_offline_packages() {
   pacman --config "$online_pacman_conf" --noconfirm -Syw \
@@ -790,11 +790,11 @@ if ! download_offline_packages; then
   download_offline_packages
 fi
 
-# mkarchiso expects the mirror at /var/cache/omarchy/mirror/offline inside the
+# mkarchiso expects the mirror at /var/cache/collie/mirror/offline inside the
 # container (the airootfs path), and the root image is pacstrapped through the
 # same path; symlink rather than duplicate.
-mkdir -p /var/cache/omarchy/mirror
-ln -sfn "$offline_mirror_dir" /var/cache/omarchy/mirror/offline
+mkdir -p /var/cache/collie/mirror
+ln -sfn "$offline_mirror_dir" /var/cache/collie/mirror/offline
 
 # Every package archive in the mirror, indexed from nothing by one repo-add per
 # CPU: one alone hashes and lists a thousand packages one after another. On aarch64
@@ -823,10 +823,10 @@ mapfile -t required_package_files <<< "$resolved_package_files"
 # that the local build left exactly one file for each selected package name.
 # The settings package is a live ISO package; the runtime and nvim packages
 # are only in the image now, but keeping all three in the mirror leaves
-# omarchy-apply-system able to resolve them like any published build.
-if [[ -n ${LOCAL_OMARCHY_BUILD:-} ]]; then
+# collie-apply-system able to resolve them like any published build.
+if [[ -n ${LOCAL_COLLIE_BUILD:-} ]]; then
   for local_package_name in \
-    "$OMARCHY_RUNTIME_PACKAGE" "$OMARCHY_SETTINGS_PACKAGE" "$OMARCHY_NVIM_PACKAGE"; do
+    "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE"; do
     local_package_file=""
     for candidate in "$offline_mirror_dir/$local_package_name-"*.pkg.tar.*; do
       [[ -f $candidate && $candidate != *.sig ]] || continue
@@ -862,14 +862,14 @@ rebuild_offline_repo_db
 # shipped mirror carries them; the image leaves those out:
 #   alsa-firmware, sof-firmware  archinstall's audio step adds each by the
 #                                sound driver the live system loaded, and
-#                                omarchy's sof-firmware.sh adds SOF on Intel
+#                                collie's sof-firmware.sh adds SOF on Intel
 #                                audio DSPs
 #   tailscale                    installed only when an autoinstall drive
 #                                staged an auth key
 # Both CPU microcodes stay in the image although a machine needs only one: the
 # pre-built UKI is made with autodetect skipped, so its microcode hook bundles
 # both, and every install early-loads its own on first boot.
-# omarchy-apply-system still installs more from omarchy-other.packages as the
+# collie-apply-system still installs more from collie-other.packages as the
 # hardware dictates.
 per_machine_packages=(alsa-firmware sof-firmware tailscale)
 
@@ -878,7 +878,7 @@ per_machine_packages=(alsa-firmware sof-firmware tailscale)
 # aarch64 machines boot like x86_64 ones; and archlinuxarm-keyring, whose keys
 # sign every Arch Linux ARM package (the installer populates it with the rest).
 image_arch_packages=()
-if [[ $OMARCHY_ARCH == aarch64 ]]; then
+if [[ $COLLIE_ARCH == aarch64 ]]; then
   image_arch_packages=(archlinuxarm-keyring limine-mkinitcpio-hook limine-snapper-sync snapper)
 fi
 image_package_list() {
@@ -890,8 +890,8 @@ image_package_list() {
     grep -hv '^#\|^$' /builder/image.packages
     ((${#image_arch_packages[@]} == 0)) || printf '%s\n' "${image_arch_packages[@]}"
     # The shipped copy, which is what the install reads too.
-    grep -hv '^#\|^$' "$build_cache_dir/airootfs/usr/share/omarchy-iso/omarchy-base.packages"
-    printf '%s\n' "$OMARCHY_RUNTIME_PACKAGE" "$OMARCHY_SETTINGS_PACKAGE" "$OMARCHY_NVIM_PACKAGE"
+    grep -hv '^#\|^$' "$build_cache_dir/airootfs/usr/share/collie-iso/collie-base.packages"
+    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE"
   } | sort -u
 }
 mapfile -t image_packages < <(image_package_list)
@@ -901,7 +901,7 @@ mapfile -t image_packages < <(image_package_list)
 # several GiB into a cache first (the same trick the installer's bind mount
 # plays on the target).
 image_pacman_conf="$build_cache_dir/pacman-root-image.conf"
-sed "/^\[options\]/a CacheDir = /var/cache/omarchy/mirror/offline/" \
+sed "/^\[options\]/a CacheDir = /var/cache/collie/mirror/offline/" \
   "$build_cache_dir/pacman-offline.conf" >"$image_pacman_conf"
 
 # The image ships as a plain file in the ISO9660 tree next to airootfs.sfs,
@@ -914,21 +914,21 @@ sed "/^\[options\]/a CacheDir = /var/cache/omarchy/mirror/offline/" \
 #
 # profiledef.sh cannot be sourced standalone (its file_permissions needs
 # mkarchiso's declare -A first); read install_dir from it. Its arch is
-# "${OMARCHY_ARCH:-x86_64}", the architecture this build is for.
-iso_subdir="$(sed -n 's/^install_dir="\(.*\)"$/\1/p' "$build_cache_dir/profiledef.sh")/$OMARCHY_ARCH"
-[[ $iso_subdir == ?*/"$OMARCHY_ARCH" ]] || { echo "ERROR: could not read install_dir from profiledef.sh: '$iso_subdir'" >&2; exit 1; }
+# "${COLLIE_ARCH:-x86_64}", the architecture this build is for.
+iso_subdir="$(sed -n 's/^install_dir="\(.*\)"$/\1/p' "$build_cache_dir/profiledef.sh")/$COLLIE_ARCH"
+[[ $iso_subdir == ?*/"$COLLIE_ARCH" ]] || { echo "ERROR: could not read install_dir from profiledef.sh: '$iso_subdir'" >&2; exit 1; }
 root_image_dir="$build_cache_dir/work/iso/$iso_subdir"
-root_image="$root_image_dir/omarchy-root.img.zst"
+root_image="$root_image_dir/collie-root.img.zst"
 mkdir -p "$root_image_dir"
 # Builds from before the raw image left a send stream (and, briefly, its
 # checksum) in the persistent build cache, where they would ship inside the
 # squashfs.
-rm -f "$build_cache_dir/airootfs/var/cache/omarchy/rootfs/omarchy-root.btrfs"*
+rm -f "$build_cache_dir/airootfs/var/cache/collie/rootfs/collie-root.btrfs"*
 
-image_localdb=/tmp/omarchy-root-image-localdb
+image_localdb=/tmp/collie-root-image-localdb
 echo "[timing] root image start $(date +%s)"
-OMARCHY_IMAGE_LOCALDB_COPY="$image_localdb" OMARCHY_IMAGE_SYNC_DBS=/tmp/offlinedb/sync \
-  OMARCHY_RENAMED_PACKAGES="$renamed_list" OMARCHY_UNRESOLVED_PACKAGES="$unresolved_list" \
+COLLIE_IMAGE_LOCALDB_COPY="$image_localdb" COLLIE_IMAGE_SYNC_DBS=/tmp/offlinedb/sync \
+  COLLIE_RENAMED_PACKAGES="$renamed_list" COLLIE_UNRESOLVED_PACKAGES="$unresolved_list" \
   bash /builder/build-root-image.sh "$image_pacman_conf" "$root_image" "${image_packages[@]}"
 echo "[timing] root image end $(date +%s)"
 
@@ -940,14 +940,14 @@ echo "[timing] root image end $(date +%s)"
 
 # Bound the boot-time hash: Type=oneshot units are exempt from systemd's
 # default start timeout, so a stick that stalls reads instead of returning an
-# error would hang omarchy-root-image-verify.service -- and with it the
+# error would hang collie-root-image-verify.service -- and with it the
 # install -- forever. Budget a floor of 2 MiB/s over the image size (a USB 2.0
 # port sustains ~30 MB/s; the margin covers the idle-class hash yielding to
 # the live system's page-ins) plus ten minutes of slack for boot. On timeout
-# systemd sets Result=timeout and omarchy-wait-root-image-verify turns that
+# systemd sets Result=timeout and collie-wait-root-image-verify turns that
 # into a "medium too slow" message instead of the corrupt-medium one.
 root_image_bytes=$(stat -c %s "$root_image")
-verify_dropin_dir="$build_cache_dir/airootfs/etc/systemd/system/omarchy-root-image-verify.service.d"
+verify_dropin_dir="$build_cache_dir/airootfs/etc/systemd/system/collie-root-image-verify.service.d"
 mkdir -p "$verify_dropin_dir"
 cat >"$verify_dropin_dir/50-size-timeout.conf" <<EOF
 # Generated by build-iso.sh: 2 MiB/s floor over the $root_image_bytes-byte root image.
@@ -958,8 +958,8 @@ EOF
 # What the ISO ships out of this mirror. mkarchiso pacstraps the live root from
 # the complete mirror at build time, but at install time only packages the
 # root image does not already hold can ever be downloaded from it: the
-# per-machine packages, and whatever omarchy-apply-system adds from
-# omarchy-other.packages. So the live root's customize_airootfs.sh removes
+# per-machine packages, and whatever collie-apply-system adds from
+# collie-other.packages. So the live root's customize_airootfs.sh removes
 # every package file the image already provides, at the same version, from
 # its copy of the mirror. The repo db stays complete on purpose: the hardware
 # scripts run `pacman -S --needed` over lists that mix packages the image has
@@ -987,7 +987,7 @@ if ! installable_files="$(
   echo "ERROR: could not resolve the packages an install can ask for" >&2
   exit 1
 fi
-shipped_list="$build_cache_dir/airootfs/usr/share/omarchy-iso/offline-mirror.shipped"
+shipped_list="$build_cache_dir/airootfs/usr/share/collie-iso/offline-mirror.shipped"
 # archlinuxarm-keyring stays too, with its signature: on aarch64 validate_boot
 # checks the target keyring against them (_validate_package_signing).
 awk -F'\t' '
@@ -1004,7 +1004,7 @@ if (( shipped_count == 0 || shipped_count >= mirror_count )); then
 fi
 echo "Shipping $shipped_count of $mirror_count mirror packages; the root image provides the rest."
 
-# The shipped mirror's own checksums, for omarchy-mirror-verify.service: the
+# The shipped mirror's own checksums, for collie-mirror-verify.service: the
 # per-machine packages an install pacstraps from it are read off the medium
 # like the root image, and a corrupt one would otherwise surface as a pacman
 # error after the disk is gone. Its repo db rides along; pacman reads it too.
@@ -1019,10 +1019,10 @@ mirror_files() {
   done <"$shipped_list"
   echo offline.db.tar.gz
 }
-mirror_sums="$build_cache_dir/airootfs/usr/share/omarchy-iso/offline-mirror.sha256"
+mirror_sums="$build_cache_dir/airootfs/usr/share/collie-iso/offline-mirror.sha256"
 (cd "$offline_mirror_dir" && mirror_files | xargs -d '\n' sha256sum) >"$mirror_sums"
 mirror_bytes=$(cd "$offline_mirror_dir" && mirror_files | xargs -d '\n' stat -L -c %s | awk '{ s += $1 } END { print s }')
-mirror_dropin_dir="$build_cache_dir/airootfs/etc/systemd/system/omarchy-mirror-verify.service.d"
+mirror_dropin_dir="$build_cache_dir/airootfs/etc/systemd/system/collie-mirror-verify.service.d"
 mkdir -p "$mirror_dropin_dir"
 printf '%s\n' "# Generated by build-iso.sh: 2 MiB/s floor over the $mirror_bytes bytes of the shipped mirror." \
   "[Service]" "TimeoutStartSec=$((mirror_bytes / (2 * 1024 * 1024) + 600))" >"$mirror_dropin_dir/50-size-timeout.conf"
@@ -1038,11 +1038,11 @@ resolve_expected_packages() {
   # $1, if given: a platform's own default set, whose packages the installer
   # adds to the image's plain set on that platform.
   local base_list=${1:-}
-  local resolve_root=/tmp/omarchy-expected-packages
+  local resolve_root=/tmp/collie-expected-packages
   local image_count resolved
   # The kernel an install gets: --needed counts nothing for it while the
   # image carries it, and a kernel no install gets would count one more.
-  local -a targets=("$OMARCHY_KERNEL")
+  local -a targets=("$COLLIE_KERNEL")
   if [[ -n $base_list ]]; then
     mapfile -t -O 1 targets < <(
       grep -hv '^#\|^$' "$base_list" | grep -Fxv -f <(printf '%s\n' "${image_packages[@]}") || true
@@ -1092,45 +1092,45 @@ if (( expected_packages < 600 || expected_packages > 2000 )); then
   exit 1
 fi
 printf '%s\n' "$expected_packages" \
-  >"$build_cache_dir/airootfs/usr/share/omarchy-iso/expected-packages"
+  >"$build_cache_dir/airootfs/usr/share/collie-iso/expected-packages"
 echo "Target install resolves to $expected_packages packages."
 
 # One count for each platform's own default set (aarch64 boards), which the
 # dashboard picks on that platform (phases._expected_package_count).
-for platform_list in "$build_cache_dir"/airootfs/usr/share/omarchy-iso/omarchy-base.*.packages; do
+for platform_list in "$build_cache_dir"/airootfs/usr/share/collie-iso/collie-base.*.packages; do
   [[ -f $platform_list ]] || continue
-  platform=${platform_list##*/omarchy-base.}
+  platform=${platform_list##*/collie-base.}
   platform=${platform%.packages}
   if ! expected_packages="$(resolve_expected_packages "$platform_list")"; then
     echo "ERROR: could not resolve the target package count for $platform from the offline mirror." >&2
     exit 1
   fi
   printf '%s\n' "$expected_packages" \
-    >"$build_cache_dir/airootfs/usr/share/omarchy-iso/expected-packages.$platform"
+    >"$build_cache_dir/airootfs/usr/share/collie-iso/expected-packages.$platform"
   echo "Target install on $platform resolves to $expected_packages packages."
 done
 
 # Live ISO uses the same offline pacman.conf.
 cp "$build_cache_dir/pacman-offline.conf" "$build_cache_dir/airootfs/etc/pacman.conf"
 
-# Build the ISO. profiledef.sh reads OMARCHY_ARCH for the archiso arch/bootmodes.
+# Build the ISO. profiledef.sh reads COLLIE_ARCH for the archiso arch/bootmodes.
 echo "[timing] mkarchiso start $(date +%s)"
 "$mkarchiso_command" -v -w "$build_cache_dir/work/" -o /out/ "$build_cache_dir/"
 echo "[timing] mkarchiso end $(date +%s)"
 
 # The live initramfs must stay small enough for GRUB and the kernel to place
-# it. omarchy-iso#128: at 241 MiB (every DRM driver's firmware, via the kms
+# it. collie-iso#128: at 241 MiB (every DRM driver's firmware, via the kms
 # hook) GRUB could not allocate it on a Lenovo Yoga's EFI memory map and booted
 # the kernel without it; measured under OVMF it needs 1 GB of RAM where the
 # 91 MiB one boots in 512 MB. 128 MiB leaves headroom over today's size and
 # none for that class of regression.
 live_initramfs_limit=$((128 * 1024 * 1024))
-for live_initramfs in "$build_cache_dir/work/iso/${iso_subdir%/*}/boot/$OMARCHY_ARCH"/initramfs-*.img; do
-  [[ -f $live_initramfs ]] || { echo "ERROR: no live initramfs under work/iso/${iso_subdir%/*}/boot/$OMARCHY_ARCH" >&2; exit 1; }
+for live_initramfs in "$build_cache_dir/work/iso/${iso_subdir%/*}/boot/$COLLIE_ARCH"/initramfs-*.img; do
+  [[ -f $live_initramfs ]] || { echo "ERROR: no live initramfs under work/iso/${iso_subdir%/*}/boot/$COLLIE_ARCH" >&2; exit 1; }
   live_initramfs_bytes=$(stat -c %s "$live_initramfs")
   echo "live initramfs $(basename "$live_initramfs"): $live_initramfs_bytes bytes"
   if (( live_initramfs_bytes > live_initramfs_limit )); then
-    echo "ERROR: live initramfs is $live_initramfs_bytes bytes, over the $live_initramfs_limit limit (omarchy-iso#128)" >&2
+    echo "ERROR: live initramfs is $live_initramfs_bytes bytes, over the $live_initramfs_limit limit (collie-iso#128)" >&2
     exit 1
   fi
 done

@@ -3,7 +3,7 @@
 #
 # The Ubuntu 26.04 minimal images lost curl and xxd because
 # both were only ever present as dependencies of pollinate, and pollinate was
-# dropped. Omarchy's scripts call commands from packages that no Omarchy
+# dropped. Collie's scripts call commands from packages that no Collie
 # package list names; this scenario is the contract that keeps them present,
 # whatever the dependency graph does underneath.
 

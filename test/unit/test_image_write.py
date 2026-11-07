@@ -1,6 +1,6 @@
 """Unit tests for how the orchestrator writes the root image to the target.
 
-_write_root_image_frames runs omarchy-image-write and decides from its exit
+_write_root_image_frames runs collie-image-write and decides from its exit
 status whether the image is on the target (0), whether the pipe should write it
 instead because the tool refused it untouched (2), or whether the install has
 failed (1). A stub stands in for the tool; image-write-test.sh tests the tool.
@@ -17,7 +17,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"))
 
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter", types.ModuleType("orchestrator.archinstall_adapter")
@@ -30,7 +30,7 @@ class WriteRootImageFramesTest(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(lambda: subprocess.run(["rm", "-rf", str(self.tmp)], check=False))
-        self.tool = self.tmp / "omarchy-image-write"
+        self.tool = self.tmp / "collie-image-write"
         self.calls = self.tmp / "calls"
         patcher = mock.patch.object(phases_impl, "IMAGE_WRITE", self.tool)
         patcher.start()
@@ -56,18 +56,18 @@ class WriteRootImageFramesTest(unittest.TestCase):
         self.assertFalse(self.write())
 
     def test_success_writes_the_image_and_logs_the_tool(self):
-        self.stub(0, "omarchy-image-write: wrote 4.67 of 6.37 GiB\\n")
+        self.stub(0, "collie-image-write: wrote 4.67 of 6.37 GiB\\n")
         self.assertTrue(self.write())
         self.assertEqual(self.calls.read_text(), "write /medium/image.zst /dev/mapper/root\n")
-        self.assertIn("› omarchy-image-write: wrote 4.67 of 6.37 GiB", self.logged)
+        self.assertIn("› collie-image-write: wrote 4.67 of 6.37 GiB", self.logged)
 
     def test_refused_image_falls_back_to_the_pipe(self):
-        self.stub(2, "omarchy-image-write: frame 0 at byte 0: not a framed image\\n")
+        self.stub(2, "collie-image-write: frame 0 at byte 0: not a framed image\\n")
         self.assertFalse(self.write())
         self.assertTrue(any("not a framed image" in line for line in self.logged))
 
     def test_failure_partway_is_an_error(self):
-        self.stub(1, "omarchy-image-write: write at byte 4096: Input/output error\\n")
+        self.stub(1, "collie-image-write: write at byte 4096: Input/output error\\n")
         with self.assertRaises(subprocess.CalledProcessError) as caught:
             self.write()
         self.assertEqual(caught.exception.returncode, 1)

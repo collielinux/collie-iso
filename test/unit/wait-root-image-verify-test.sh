@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# omarchy-wait-root-image-verify is the single gate both disk-touching paths
+# collie-wait-root-image-verify is the single gate both disk-touching paths
 # clear before formatting: the orchestrator (full-disk) and the configurator
 # (free-space). It collects the boot-time hasher's verdict, waiting if it is
 # still running and starting it if it never did. This drives it with a stubbed
@@ -10,7 +10,7 @@
 set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-HELPER="$ROOT/configs/airootfs/usr/local/bin/omarchy-wait-root-image-verify"
+HELPER="$ROOT/configs/airootfs/usr/local/bin/collie-wait-root-image-verify"
 
 fails=0
 check() { # desc, expected_rc, actual_rc, [needle in output], [output]
@@ -29,14 +29,14 @@ check() { # desc, expected_rc, actual_rc, [needle in output], [output]
 # on successive calls (last one repeats); LOADSTATE, START_RC and RESULT (the
 # unit's Result property, exit-code unless overridden) tune the rest.
 # MIRROR_SEQ, when set, ships the mirror's sums file and gives
-# omarchy-mirror-verify.service its own ActiveState sequence (MIRROR_RESULT its
+# collie-mirror-verify.service its own ActiveState sequence (MIRROR_RESULT its
 # Result); without it the sandbox is an ISO without the mirror's sums file.
 run_helper() { # loadstate, active_seq, start_rc, [result]  ->  sets RC and OUT
   local loadstate=$1 active_seq=$2 start_rc=$3 result=${4:-exit-code}
   local box; box=$(mktemp -d)
   mkdir -p "$box/bin" "$box/medium/arch/x86_64" "$box/sys/block/sdz/queue"
-  : >"$box/medium/arch/x86_64/omarchy-root.img.zst"
-  : >"$box/medium/arch/x86_64/omarchy-root.img.zst.sha256"
+  : >"$box/medium/arch/x86_64/collie-root.img.zst"
+  : >"$box/medium/arch/x86_64/collie-root.img.zst.sha256"
 
   # WITH_HASHER_PROC=1: a fake hasher (pid 4242) holds the image at pos 512
   # of 1024 bytes, and the helper draws progress into $box/progress. The shim
@@ -44,9 +44,9 @@ run_helper() { # loadstate, active_seq, start_rc, [result]  ->  sets RC and OUT
   local mainpid=0
   if [[ -n ${WITH_HASHER_PROC:-} ]]; then
     mainpid=4242
-    head -c 1024 /dev/zero >"$box/medium/arch/x86_64/omarchy-root.img.zst"
+    head -c 1024 /dev/zero >"$box/medium/arch/x86_64/collie-root.img.zst"
     mkdir -p "$box/proc/4242/fd" "$box/proc/4242/fdinfo"
-    ln -s "$box/medium/arch/x86_64/omarchy-root.img.zst" "$box/proc/4242/fd/7"
+    ln -s "$box/medium/arch/x86_64/collie-root.img.zst" "$box/proc/4242/fd/7"
     printf 'pos:\t512\nflags:\t0100000\n' >"$box/proc/4242/fdinfo/7"
   fi
   echo "none mq-deadline kyber [bfq]" >"$box/sys/block/sdz/queue/scheduler"
@@ -81,12 +81,12 @@ EOF
 #!/bin/bash
 [[ \$1 == --sync ]] && exit 0
 late=\$(cat "$box/journal_late")
-if [[ \$* == *omarchy-mirror-verify* ]]; then
+if [[ \$* == *collie-mirror-verify* ]]; then
   echo "linux-t2.pkg.tar.zst: FAILED"
   echo "sha256sum: WARNING: 1 computed checksum did NOT match"
   exit 0
 fi
-echo "omarchy-root.img.zst: FAILED"
+echo "collie-root.img.zst: FAILED"
 if ((late > 0)); then echo \$((late - 1)) >"$box/journal_late"; exit 0; fi
 echo "sha256sum: WARNING: 1 computed checksum did NOT match"
 EOF
@@ -94,7 +94,7 @@ EOF
   cat >"$box/bin/systemctl" <<EOF
 #!/bin/bash
 box="$box"; start_rc=$start_rc; loadstate="$loadstate"; result="$result"; mainpid=$mainpid
-if [[ \$1 == show && \$* == *omarchy-mirror-verify* ]]; then
+if [[ \$1 == show && \$* == *collie-mirror-verify* ]]; then
   case "\$*" in
     *LoadState*)  echo loaded ;;
     *Result*)     echo "${MIRROR_RESULT:-exit-code}" ;;
@@ -138,17 +138,17 @@ EOF
   sed -e "s#/run/archiso/bootmnt#$box/medium#g" \
       -e "s#/sys/block#$box/sys/block#g" \
       -e "s#/proc/#$box/proc/#g" \
-      -e "s#/usr/share/omarchy-iso/offline-mirror.sha256#$box/sums#g" \
-      -e "s#/var/cache/omarchy/mirror/offline#$box/mirror#g" \
+      -e "s#/usr/share/collie-iso/offline-mirror.sha256#$box/sums#g" \
+      -e "s#/var/cache/collie/mirror/offline#$box/mirror#g" \
       "$HELPER" >"$shim"
   chmod +x "$shim"
 
   local progress_env=()
-  [[ -n ${WITH_HASHER_PROC:-}${WITH_MIRROR_HASHER:-} ]] && progress_env=(OMARCHY_VERIFY_PROGRESS="$box/progress")
-  [[ -n ${INDENT:-} ]] && progress_env+=(OMARCHY_VERIFY_PROGRESS_INDENT="$INDENT")
+  [[ -n ${WITH_HASHER_PROC:-}${WITH_MIRROR_HASHER:-} ]] && progress_env=(COLLIE_VERIFY_PROGRESS="$box/progress")
+  [[ -n ${INDENT:-} ]] && progress_env+=(COLLIE_VERIFY_PROGRESS_INDENT="$INDENT")
 
   set +e
-  OUT=$(PATH="$box/bin:$PATH" OMARCHY_VERIFY_RETRY_SECONDS=0 OMARCHY_VERIFY_STALL_SECONDS="${STALL:-60}" \
+  OUT=$(PATH="$box/bin:$PATH" COLLIE_VERIFY_RETRY_SECONDS=0 COLLIE_VERIFY_STALL_SECONDS="${STALL:-60}" \
     env "${progress_env[@]}" timeout 120 bash "$shim" 2>&1)
   RC=$?
   set -e
@@ -164,7 +164,7 @@ check "active unit passes" 0 "$RC" "scheduler: none mq-deadline kyber [bfq]" "$O
 run_helper loaded $'activating\nactivating\nactive' 0
 check "waits for a running unit then passes" 0 "$RC" "waiting for" "$OUT"
 
-# With OMARCHY_VERIFY_PROGRESS set and a hasher pid to read, the wait draws a
+# With COLLIE_VERIFY_PROGRESS set and a hasher pid to read, the wait draws a
 # live percent (fixture: pos 512 of 1024 -> 50%) and finishes the line at 100%
 # on success. Progress goes to the given path, never into stdout/stderr.
 WITH_HASHER_PROC=1 run_helper loaded $'activating\nactivating\nactive' 0
@@ -178,7 +178,7 @@ check "progress line drawn while hashing" 0 "$RC" "" "$OUT"
 # text instead of at column 0.
 INDENT=4 WITH_HASHER_PROC=1 run_helper loaded $'activating\nactivating\nactive' 0
 [[ $PROGRESS_OUT == $'\r    verifying the install medium:  50%'* && $PROGRESS_OUT == *$'\r    verifying the install medium: 100%'* ]] &&
-  echo "ok: progress is indented by OMARCHY_VERIFY_PROGRESS_INDENT" ||
+  echo "ok: progress is indented by COLLIE_VERIFY_PROGRESS_INDENT" ||
   { echo "FAIL: indented progress wrong: $(printf '%q' "$PROGRESS_OUT")"; fails=1; }
 
 # A failed hash ends the progress line without the cosmetic 100%. (The first
@@ -255,7 +255,7 @@ check "image and mirror verified passes" 0 "$RC" "" "$OUT"
 # The mirror is still hashing when the image is done: wait for it too.
 MIRROR_SEQ=$'activating\nactivating\nactive' run_helper loaded "active" 0
 check "waits for the mirror hash" 0 "$RC" \
-  "waiting for omarchy-mirror-verify.service to finish hashing the package mirror" "$OUT"
+  "waiting for collie-mirror-verify.service to finish hashing the package mirror" "$OUT"
 
 # A corrupt package fails the gate before any disk is touched, and says which.
 MIRROR_SEQ=failed run_helper loaded "active" 0
@@ -294,5 +294,5 @@ check "a corrupt mirror fails before the image is waited for" 1 "$RC" "sha256 mi
 MIRROR_SEQ=active run_helper loaded "failed" 0
 check "a verified mirror and a corrupt image is a corrupt image" 1 "$RC" "sha256 mismatch on the root image" "$OUT"
 
-[[ $fails -eq 0 ]] && echo "ok: omarchy-wait-root-image-verify gate behaves"
+[[ $fails -eq 0 ]] && echo "ok: collie-wait-root-image-verify gate behaves"
 exit "$fails"

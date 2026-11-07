@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"))
 
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter", types.ModuleType("orchestrator.archinstall_adapter")
@@ -34,7 +34,7 @@ class MediumBytesReadTest(unittest.TestCase):
 
     def test_no_block_device_answers_none(self):
         self.assertIsNone(self.read(None))
-        self.assertIsNone(self.read("10.0.2.2:/srv/omarchy"))
+        self.assertIsNone(self.read("10.0.2.2:/srv/collie"))
         self.assertIsNone(self.read("/dev/sda1"))  # no stat file
         self.assertIsNone(self.read("/dev/sda1", "garbage\n"))
 

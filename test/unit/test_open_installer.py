@@ -2,7 +2,7 @@
 
 archinstall's Installer.__exit__ prints "Please submit this issue (and file) to
 https://github.com/archlinux/archinstall/issues" for any exception inside the
-with-block, and Omarchy runs most of its own install in that block, so its
+with-block, and Collie runs most of its own install in that block, so its
 failures would be filed with archinstall (archlinux/archinstall#4773). The
 Installer below behaves like archinstall 4.4's.
 """
@@ -68,7 +68,7 @@ class OpenInstallerTest(unittest.TestCase):
 
     def test_the_subclass_is_what_runs_the_install(self):
         with self.arch.open_installer(Config(), Path("/mnt")) as installer:
-            self.assertIsInstance(installer, self.arch.OmarchyInstaller)
+            self.assertIsInstance(installer, self.arch.CollieInstaller)
             self.assertIsInstance(installer, Installer)
 
 

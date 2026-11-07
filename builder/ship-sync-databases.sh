@@ -31,7 +31,7 @@ if [[ -z $root || -z $source_dir ]]; then
   exit 1
 fi
 
-runtime="$root/usr/share/omarchy"
+runtime="$root/usr/share/collie"
 mapfile -t repos < <(
   {
     find "$runtime/default/pacman" -name 'pacman-*.conf' -print0 2>/dev/null | xargs -0r cat
@@ -55,7 +55,7 @@ for repo in "${repos[@]}"; do
   shipped+=("$repo")
 done
 
-for required in core extra omarchy; do
+for required in core extra collie; do
   if [[ ! -f $sync_dir/$required.db ]]; then
     echo "ERROR: no $required.db in $source_dir to ship in the image" >&2
     exit 1

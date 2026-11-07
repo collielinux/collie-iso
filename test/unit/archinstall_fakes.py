@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/omarchy-iso"
+PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "configs/airootfs/usr/share/collie-iso"
 
 
 def _nothing(*_args, **_kwargs):

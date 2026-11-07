@@ -5,22 +5,22 @@ name: Nightly ISO Build
 # publishes it with a latest.json saying what is in it.
 #
 #   edge    the ISO is built here, from the edge channel: its packages, its
-#           mirrors and the edge builds of Omarchy (omarchy-dev)
+#           mirrors and the edge builds of Collie (omarchy-dev)
 #   edge-aarch64
 #           the same for aarch64, on the ARM runner with KVM: the ISO is built
 #           from the edge channel, booted, installed, and installed again as an
 #           N1x. Only the ISO is published, no VM image yet.
-#   stable  the ISO is the last release: omacom/omarchy's latest release names
+#   stable  the ISO is the last release: collielinux/collie's latest release names
 #           the version, iso.omarchy.org has the ISO, its signature is checked.
 #           Done once for each release, skipped on the nights after.
 #
 #   https://nightly.omarchy.org/<channel>/latest.json
-#   https://nightly.omarchy.org/edge/<version>/omarchy-edge-<version>.iso
-#   https://nightly.omarchy.org/edge/<version>/omarchy-edge-<version>.qcow2
+#   https://nightly.omarchy.org/edge/<version>/collie-edge-<version>.iso
+#   https://nightly.omarchy.org/edge/<version>/collie-edge-<version>.qcow2
 #   https://nightly.omarchy.org/edge/<version>/unpacked/    kernel, initramfs, vm-boot
-#   https://nightly.omarchy.org/stable/<version>/<run>/omarchy-<version>.qcow2
+#   https://nightly.omarchy.org/stable/<version>/<run>/collie-<version>.qcow2
 #   https://nightly.omarchy.org/stable/<version>/<run>/unpacked/
-#   https://nightly.omarchy.org/edge-aarch64/<version>/omarchy-edge-<version>-aarch64.iso
+#   https://nightly.omarchy.org/edge-aarch64/<version>/collie-edge-<version>-aarch64.iso
 #
 # Nothing is published unless the ISO installed and the image passed its
 # checks. A version's files are written once and never replaced: the CDN keeps
@@ -67,7 +67,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          release=$(gh api repos/omacom/omarchy/releases/latest --jq .tag_name)
+          release=$(gh api repos/collielinux/collie/releases/latest --jq .tag_name)
           published=$(curl -fsL "$SITE/stable/latest.json?run=$GITHUB_RUN_ID" | jq -r .version || true)
           channels=$(./test/vm-image/nightly-plan "$(date -u +%Y.%m.%d)" "${{ github.run_number }}" "${{ github.run_attempt }}" \
             "$GITHUB_EVENT_NAME" "$release" "$published")
@@ -112,11 +112,11 @@ jobs:
       # missing there fails this build instead of being served from a cache.
       - name: Build the edge ISO
         if: matrix.channel == 'edge'
-        run: NO_BOOT_OFFER=1 ./bin/omarchy-iso-make --edge
+        run: NO_BOOT_OFFER=1 ./bin/collie-iso-make --edge
 
       - name: Build the edge ISO (aarch64)
         if: matrix.channel == 'edge-aarch64'
-        run: ./bin/omarchy-iso-make --arch aarch64 --edge --no-boot-offer
+        run: ./bin/collie-iso-make --arch aarch64 --edge --no-boot-offer
 
       # Good only if the signature is the release key's, the one in this repo.
       - name: Download the released ISO and check its signature
@@ -128,7 +128,7 @@ jobs:
           curl -fSL --retry 3 -o "release/$iso" "https://iso.omarchy.org/$iso"
           curl -fsSL --retry 3 -o "release/$iso.sig" "https://iso.omarchy.org/$iso.sig"
           home=$(mktemp -d)
-          gpg --homedir "$home" --quiet --batch --import builder/omarchy.gpg
+          gpg --homedir "$home" --quiet --batch --import builder/collie.gpg
           key=$(gpg --homedir "$home" --batch --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }')
           gpg --homedir "$home" --batch --status-fd 1 --verify "release/$iso.sig" "release/$iso" 2>/dev/null |
             grep -q "^\[GNUPG:\] VALIDSIG $key " || { echo "::error::$iso is not signed by $key"; exit 1; }
@@ -142,7 +142,7 @@ jobs:
         run: |
           sudo chmod 0666 /dev/kvm
           docker run --rm --device /dev/kvm -v "$PWD:/w" -w /w \
-            -e OMARCHY_INTEGRATION_DISK_CACHE=none \
+            -e COLLIE_INTEGRATION_DISK_CACHE=none \
             ghcr.io/archlinux/archlinux:latest bash -euo pipefail -c '
               # pacman 7 fails every sync on a kernel without Landlock, which
               # these runners have; builder/build-iso.sh does the same.
@@ -160,9 +160,9 @@ jobs:
                 [ "$attempt" -lt 3 ] || { echo "::error::the test container could not install its tools"; exit 1; }
                 echo "pacman failed, attempt $attempt of 3; trying again in 15 s"; sleep 15
               done
-              # test/integration installs its tools through Omarchy'"'"'s helper; they are installed above.
-              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/omarchy-pkg-add
-              chmod 0755 /usr/local/bin/omarchy-pkg-add
+              # test/integration installs its tools through Collie'"'"'s helper; they are installed above.
+              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/collie-pkg-add
+              chmod 0755 /usr/local/bin/collie-pkg-add
               qemu-system-x86_64 --version | head -1
               ./test/integration release/*.iso boot ${{ matrix.channel == 'stable' && '--release-iso' || '' }} --no-preview --memory 8192 --timeout 1800
 
@@ -240,8 +240,8 @@ jobs:
         with:
           name: nightly-install-test-${{ matrix.channel }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            test-runs/*/omarchy-install-timing.json
-            test-runs/*/omarchy-install.log
+            test-runs/*/collie-install-timing.json
+            test-runs/*/collie-install.log
             test-runs/*/first-boot-systemd-analyze.txt
             test-runs/*/runs/**/*.png
             test-runs/*/runs/**/*.txt
@@ -287,7 +287,7 @@ jobs:
       RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       RCLONE_CONFIG_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-      BUCKET: omarchy-nightly
+      BUCKET: collie-nightly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

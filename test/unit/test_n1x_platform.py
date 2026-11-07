@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter",
     types.ModuleType("orchestrator.archinstall_adapter"),
@@ -38,24 +38,24 @@ NORMAL_CMDLINE = (
 # its fallback UKI as the rescue entry.
 def limine_conf(rescue_cmdline=RESCUE_CMDLINE, normal_cmdline=NORMAL_CMDLINE, rescue=True):
     rescue_entry = f"""\
-  //linux-omarchy-fallback
-  comment: Kernel version: 7.2.8-8-omarchy
-  comment: kernel-id=linux-omarchy-fallback
+  //linux-collie-fallback
+  comment: Kernel version: 7.2.8-8-collie
+  comment: kernel-id=linux-collie-fallback
   protocol: efi
-  path: boot():/EFI/Linux/omarchy_linux-omarchy-fallback.efi#5187fcdd
+  path: boot():/EFI/Linux/collie_linux-collie-fallback.efi#5187fcdd
   cmdline: {rescue_cmdline}
 """ if rescue else ""
     return f"""\
 timeout: 3
 default_entry: 2
 
-/+Omarchy
-comment: Omarchy
+/+Collie
+comment: Collie
   //linux-omarchy
-  comment: Kernel version: 7.2.8-8-omarchy
+  comment: Kernel version: 7.2.8-8-collie
   comment: kernel-id=linux-omarchy
   protocol: efi
-  path: boot():/EFI/Linux/omarchy_linux-omarchy.efi#1ebecba8
+  path: boot():/EFI/Linux/collie_linux-collie.efi#1ebecba8
   cmdline: {normal_cmdline}
 {rescue_entry}
 /EFI fallback
@@ -89,7 +89,7 @@ class PlatformKernelTest(unittest.TestCase):
 
     def test_kernel_file(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "omarchy_kernel"
+            path = Path(tmp) / "collie_kernel"
             self.assertEqual(context.iso_kernel(path), "")
             path.write_text(f"{KERNEL}\n")
             self.assertEqual(context.iso_kernel(path), KERNEL)
@@ -97,7 +97,7 @@ class PlatformKernelTest(unittest.TestCase):
     def test_platform_detector(self):
         # x86_64 images carry no detector, and one that cannot tell names nothing.
         with tempfile.TemporaryDirectory() as tmp:
-            detector = Path(tmp) / "omarchy-hw-platform"
+            detector = Path(tmp) / "collie-hw-platform"
             self.assertEqual(context.hw_platform(detector), "")
             detector.write_text("echo aarch64-qualcomm\n")
             self.assertEqual(context.hw_platform(detector), "aarch64-qualcomm")
@@ -147,7 +147,7 @@ class N1xLimineContractTest(unittest.TestCase):
             self.validate(limine_conf(normal_cmdline=f"console=tty0,115200 acpi=nospcr {ROOT_CMDLINE}"), "n1x")
 
     def test_missing_rescue_entry_fails(self):
-        with self.assertRaisesRegex(RuntimeError, "no linux-omarchy-fallback rescue entry"):
+        with self.assertRaisesRegex(RuntimeError, "no linux-collie-fallback rescue entry"):
             self.validate(limine_conf(rescue=False), "n1x")
 
     # The 2026-09-03 failure: the rescue entry carried the normal cmdline, so
@@ -172,11 +172,11 @@ class Aarch64ConsoleTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         target = Path(tmp.name)
-        templates = target / "usr/share/omarchy/default/limine"
+        templates = target / "usr/share/collie/default/limine"
         templates.mkdir(parents=True)
         (templates / "default.conf").write_text('KERNEL_CMDLINE[default]="@@CMDLINE@@"\nESP_PATH="/boot"\n')
         (templates / "limine.conf").write_text("timeout: 3\n")
-        ctx = types.SimpleNamespace(target=target, omarchy_path=target / "omarchy")
+        ctx = types.SimpleNamespace(target=target, collie_path=target / "collie")
         # luks_tuning needs archinstall, which only the live ISO has. A plain
         # root, which it passes through unchanged: the console drop-in does not
         # depend on encryption, and an encrypted cmdline needs the rd.luks.name=
@@ -202,21 +202,21 @@ class PlatformPackageListTest(unittest.TestCase):
     def chosen(self, detected, *shipped):
         with tempfile.TemporaryDirectory() as tmp:
             share = Path(tmp)
-            for name in ("omarchy-base.packages", *shipped):
+            for name in ("collie-base.packages", *shipped):
                 (share / name).write_text("")
             with mock.patch.object(phases_impl, "hw_platform", return_value=detected):
                 return phases_impl._base_package_file(share).name
 
     def test_a_platform_gets_its_own_set(self):
         self.assertEqual(
-            self.chosen("aarch64-qualcomm", "omarchy-base.aarch64-qualcomm.packages", "omarchy-base.aarch64-n1x.packages"),
-            "omarchy-base.aarch64-qualcomm.packages",
+            self.chosen("aarch64-qualcomm", "collie-base.aarch64-qualcomm.packages", "collie-base.aarch64-n1x.packages"),
+            "collie-base.aarch64-qualcomm.packages",
         )
 
     def test_any_other_machine_gets_the_plain_set(self):
-        self.assertEqual(self.chosen("aarch64", "omarchy-base.aarch64-n1x.packages"), "omarchy-base.packages")
-        self.assertEqual(self.chosen("aarch64-gb10", "omarchy-base.aarch64-n1x.packages"), "omarchy-base.packages")
-        self.assertEqual(self.chosen(""), "omarchy-base.packages")
+        self.assertEqual(self.chosen("aarch64", "collie-base.aarch64-n1x.packages"), "collie-base.packages")
+        self.assertEqual(self.chosen("aarch64-gb10", "collie-base.aarch64-n1x.packages"), "collie-base.packages")
+        self.assertEqual(self.chosen(""), "collie-base.packages")
 
     # The progress bar counts toward the set the machine really gets.
     def expected(self, detected):
@@ -236,8 +236,8 @@ class PlatformPackageListTest(unittest.TestCase):
     def delta(self, detected, platform_set, in_image):
         with tempfile.TemporaryDirectory() as tmp:
             share = Path(tmp)
-            (share / "omarchy-base.packages").write_text("hyprland\n")
-            (share / "omarchy-base.aarch64-n1x.packages").write_text(platform_set)
+            (share / "collie-base.packages").write_text("hyprland\n")
+            (share / "collie-base.aarch64-n1x.packages").write_text(platform_set)
             with mock.patch.object(phases_impl, "hw_platform", return_value=detected), \
                     mock.patch.object(phases_impl.arch, "target_missing_packages", create=True,
                                       side_effect=lambda _target, names: [n for n in names if n not in in_image]):
@@ -287,7 +287,7 @@ class N1xHardwareGateTest(unittest.TestCase):
         platform, run = self.installed_platform(0)
         self.assertEqual(platform, "n1x")
         run.assert_called_once()
-        self.assertEqual(run.call_args.args[0], ["arch-chroot", "/mnt", "omarchy-hw-n1x"])
+        self.assertEqual(run.call_args.args[0], ["arch-chroot", "/mnt", "collie-hw-n1x"])
 
     def test_other_hardware_is_not(self):
         self.assertEqual(self.installed_platform(1)[0], "")

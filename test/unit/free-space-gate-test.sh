@@ -5,10 +5,10 @@
 # luksFormat and mkfs have already run. The full-disk path has an integration
 # scenario for its gate (corrupt-image-test.sh, which autoinstalls from cidata
 # and so never reaches the configurator at all). The free-space path has one
-# too (bin/omarchy-iso-test --free-space, run by install-test.yml), but it
+# too (bin/collie-iso-test --free-space, run by install-test.yml), but it
 # drives the wizard rather than the cidata autoinstall, and ./test/all does not
 # run it: deleting this gate outright leaves ./test/all green. Assert the
-# ordering statically here: whatever else moves, omarchy-wait-root-image-verify
+# ordering statically here: whatever else moves, collie-wait-root-image-verify
 # has to run before run_partition_execute.
 
 set -euo pipefail
@@ -30,7 +30,7 @@ line_of() { # what, pattern -> the one line number matching it
 }
 
 branch=$(line_of "free_space branch" 'if \[\[ \$install_target == "free_space" \]\]; then$')
-gate=$(line_of "call to the verify gate" '.*omarchy-wait-root-image-verify')
+gate=$(line_of "call to the verify gate" '.*collie-wait-root-image-verify')
 format=$(line_of "call to run_partition_execute" '\s+run_partition_execute ')
 
 ((branch < gate)) ||

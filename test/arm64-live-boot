@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Boots an aarch64 Omarchy ISO the way a machine would: UEFI firmware, GRUB
+# Boots an aarch64 Collie ISO the way a machine would: UEFI firmware, GRUB
 # from the ISO, the live kernel and initramfs, the live root. It passes when
 # the live system offers a login on its serial port.
 #
-#   test/arm64-live-boot <omarchy.iso> <evidence_dir>
+#   test/arm64-live-boot <collie.iso> <evidence_dir>
 #
 # Needs an arm64 host with a usable /dev/kvm, qemu-system-aarch64 and the
 # AAVMF/edk2 firmware. evidence_dir gets serial.log, screen.png and timing.

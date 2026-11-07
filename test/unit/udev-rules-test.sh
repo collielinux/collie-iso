@@ -17,7 +17,7 @@ fi
 
 udevadm verify --no-style "$rules_dir"/*.rules
 
-bfq_rule="$rules_dir/71-omarchy-iso-boot-medium-bfq.rules"
+bfq_rule="$rules_dir/71-collie-iso-boot-medium-bfq.rules"
 grep -qE '^ACTION=="add\|change".*ENV\{ID_BUS\}=="usb".*ATTR\{queue/scheduler\}="bfq"' "$bfq_rule" ||
   { echo "USB disks are no longer put on bfq in $bfq_rule"; exit 1; }
 grep -qE '^ACTION=="add\|change".*KERNEL=="sr\[0-9\]\*.*ATTR\{queue/scheduler\}="bfq"' "$bfq_rule" ||

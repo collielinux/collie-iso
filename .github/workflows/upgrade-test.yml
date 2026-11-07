@@ -1,7 +1,7 @@
 name: Upgrade test
 
 # What an existing user gets: installs a release from its ISO, moves it to
-# another channel the way a user would (omarchy-channel-set), reboots it, and
+# another channel the way a user would (collie-channel-set), reboots it, and
 # checks what came back. test/upgrade-test does the work and says what it
 # checks.
 #
@@ -51,9 +51,9 @@ jobs:
           FROM: ${{ inputs.from }}
         run: |
           set -euo pipefail
-          version=${FROM:-$(gh api repos/omacom/omarchy/releases/latest --jq .tag_name)}
+          version=${FROM:-$(gh api repos/collielinux/collie/releases/latest --jq .tag_name)}
           version=${version#v}
-          # A release candidate's ISO is published as omarchy-<version>rc<N>.iso.
+          # A release candidate's ISO is published as collie-<version>rc<N>.iso.
           [[ $version =~ ^[0-9]+(\.[0-9]+)+(rc[0-9]+)?$ ]] || { echo "::error::'$version' is not a release version"; exit 1; }
           echo "version=$version" | tee -a "$GITHUB_OUTPUT"
 
@@ -68,7 +68,7 @@ jobs:
           curl -fSL --retry 3 -o "release/$iso" "https://iso.omarchy.org/$iso"
           curl -fsSL --retry 3 -o "release/$iso.sig" "https://iso.omarchy.org/$iso.sig"
           home=$(mktemp -d)
-          gpg --homedir "$home" --quiet --batch --import builder/omarchy.gpg
+          gpg --homedir "$home" --quiet --batch --import builder/collie.gpg
           key=$(gpg --homedir "$home" --batch --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }')
           gpg --homedir "$home" --batch --status-fd 1 --verify "release/$iso.sig" "release/$iso" 2>/dev/null |
             grep -q "^\[GNUPG:\] VALIDSIG $key " || { echo "::error::$iso is not signed by $key"; exit 1; }
@@ -84,7 +84,7 @@ jobs:
         run: |
           sudo chmod 0666 /dev/kvm
           docker run --rm --device /dev/kvm -v "$PWD:/w" -w /w \
-            -e OMARCHY_INTEGRATION_DISK_CACHE=none -e TO \
+            -e COLLIE_INTEGRATION_DISK_CACHE=none -e TO \
             ghcr.io/archlinux/archlinux:latest bash -euo pipefail -c '
               if ! grep -qw landlock /sys/kernel/security/lsm 2>/dev/null; then
                 printf "#!/bin/sh\nexec /usr/bin/pacman --disable-sandbox \"\$@\"\n" >/usr/local/bin/pacman
@@ -97,8 +97,8 @@ jobs:
                 [ "$attempt" -lt 3 ] || { echo "::error::the test container could not install its tools"; exit 1; }
                 echo "pacman failed, attempt $attempt of 3; trying again in 15 s"; sleep 15
               done
-              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/omarchy-pkg-add
-              chmod 0755 /usr/local/bin/omarchy-pkg-add
+              printf "#!/bin/sh\nexit 0\n" >/usr/local/bin/collie-pkg-add
+              chmod 0755 /usr/local/bin/collie-pkg-add
               mkdir -p upgrade-evidence
               status=0
               ./test/integration release/*.iso boot --release-iso --no-preview --memory 8192 --timeout 1800 || status=$?

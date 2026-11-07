@@ -1,7 +1,7 @@
 """The install must not wait on a network it may not have.
 
 mise reshim resolves the version list of every tool declared in
-/etc/mise/conf.d/omarchy-tools.toml, all of them version = "latest". Offline,
+/etc/mise/conf.d/collie-tools.toml, all of them version = "latest". Offline,
 each lookup waits out mise's HTTP timeout first: 40.10 s of a 65 s install.
 MISE_OFFLINE=1 blocks every HTTP request, and the tools are lazy, so reshim
 still only needs the declarations.
@@ -15,7 +15,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/omarchy-iso"))
+sys.path.insert(0, str(ROOT / "configs/airootfs/usr/share/collie-iso"))
 sys.modules.setdefault(
     "orchestrator.archinstall_adapter",
     types.ModuleType("orchestrator.archinstall_adapter"),

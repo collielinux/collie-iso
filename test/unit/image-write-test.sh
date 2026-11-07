@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Unit tests for builder/omarchy-image-write.c, the tool that packs the root
+# Unit tests for builder/collie-image-write.c, the tool that packs the root
 # image into independent zstd frames at build time and writes it to the target
 # with parallel O_DIRECT writes at install time. It is compiled here with the
 # address and undefined-behaviour sanitizers, so a memory error fails the test
@@ -30,10 +30,10 @@ fail() {
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-tool="$work/omarchy-image-write"
+tool="$work/collie-image-write"
 ${CC:-cc} -std=gnu11 -O1 -g -Wall -Wextra -Werror -pthread \
   -fsanitize=address,undefined -fno-sanitize-recover=all \
-  -o "$tool" "$ROOT/builder/omarchy-image-write.c" -lzstd ||
+  -o "$tool" "$ROOT/builder/collie-image-write.c" -lzstd ||
   fail "compiles" "needs a C compiler and the libzstd headers (Arch: zstd, Debian: libzstd-dev)"
 pass "compiles with -Wall -Wextra -Werror and the sanitizers"
 
@@ -46,7 +46,7 @@ frame = 256 * 1024
 with open(sys.argv[1], "wb") as f:
     f.write(rng.randbytes(4 * frame))
     f.write(bytes(2 * frame))
-    f.write((b"omarchy " * frame)[:4 * frame])
+    f.write((b"collie " * frame)[:4 * frame])
     f.write(rng.randbytes(8192))
 PY
 raw_size=$(stat -c %s "$raw")

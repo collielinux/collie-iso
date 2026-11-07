@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Unit tests for omarchy-install-diagnose-media and the failure screen that
+# Unit tests for collie-install-diagnose-media and the failure screen that
 # renders it. Every case builds a throwaway offline mirror -- a package file
 # and a real repo-add-shaped offline.db naming its sha256 -- so the three
 # verdicts are told apart by the same evidence the live ISO has.
@@ -8,8 +8,8 @@
 set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-DIAGNOSE="$ROOT/configs/airootfs/usr/local/bin/omarchy-install-diagnose-media"
-DASHBOARD="$ROOT/configs/airootfs/usr/local/bin/omarchy-install-dashboard"
+DIAGNOSE="$ROOT/configs/airootfs/usr/local/bin/collie-install-diagnose-media"
+DASHBOARD="$ROOT/configs/airootfs/usr/local/bin/collie-install-dashboard"
 PACKAGE="npth-1.8-1-x86_64.pkg.tar.zst"
 TARGET_CACHE="/mnt/var/cache/pacman/pkg"
 
@@ -69,7 +69,7 @@ write_log() {
 }
 
 diagnose() {
-  OMARCHY_OFFLINE_MIRROR="$mirror" OMARCHY_TARGET_PACKAGE_CACHE="$TARGET_CACHE" \
+  COLLIE_OFFLINE_MIRROR="$mirror" COLLIE_TARGET_PACKAGE_CACHE="$TARGET_CACHE" \
     "$DIAGNOSE" "$@"
 }
 
@@ -253,9 +253,9 @@ stubs="$work/stubs"
 mkdir -p "$stubs"
 {
   echo '#!/bin/bash'
-  echo "OMARCHY_OFFLINE_MIRROR='$mirror' OMARCHY_TARGET_PACKAGE_CACHE='$TARGET_CACHE' exec '$DIAGNOSE' \"\$@\""
-} >"$stubs/omarchy-install-diagnose-media"
-chmod +x "$stubs/omarchy-install-diagnose-media"
+  echo "COLLIE_OFFLINE_MIRROR='$mirror' COLLIE_TARGET_PACKAGE_CACHE='$TARGET_CACHE' exec '$DIAGNOSE' \"\$@\""
+} >"$stubs/collie-install-diagnose-media"
+chmod +x "$stubs/collie-install-diagnose-media"
 
 state_file="$work/state.json"
 screen="$work/screen"
@@ -263,15 +263,15 @@ screen="$work/screen"
 # A ten-line logo, the height of the real one. Without it the dashboard falls
 # back to a single centred word and the screen can never be tall enough to
 # overflow, which is exactly the case worth testing.
-omarchy_share="$work/share"
-mkdir -p "$omarchy_share"
+collie_share="$work/share"
+mkdir -p "$collie_share"
 # 81 columns wide, like the real logo: the dashboard takes its content width
 # from the logo, and a narrow one would truncate every line under test.
 {
   printf 'LOGO TOP ROW%*s\n' 69 ''
   for n in 2 3 4 5 6 7 8 9; do printf 'logo row %s%*s\n' "$n" 71 ''; done
   printf 'logo bottom row%*s\n' 66 ''
-} >"$omarchy_share/logo.txt"
+} >"$collie_share/logo.txt"
 
 run_dashboard() {
   local install_log="$1"
@@ -279,12 +279,12 @@ run_dashboard() {
   # A real failure carries the failed phase as well as the current one, and
   # that second summary line is another row the screen has to find space for.
   cat >"$state_file" <<'STATE'
-{"current_phase": "Installing Arch + Omarchy",
- "phases": [{"name": "Installing Arch + Omarchy", "status": "failed",
+{"current_phase": "Installing Arch + Collie",
+ "phases": [{"name": "Installing Arch + Collie", "status": "failed",
              "error": "Pacstrap failed. See /var/log/archinstall.log"}]}
 STATE
   : >"$screen"
-  script -qefc "stty rows 40 cols 120; PATH='$stubs:$PATH' OMARCHY_PATH='$omarchy_share' PROGRESS_ICON='$ROOT/test/unit/fixtures/progress-icon.sh' OMARCHY_UI_INTERACTIVE=no OMARCHY_UI_FAILURE_ACTION=exit OMARCHY_FAILURE_TAIL_LOG='$install_log' '$DASHBOARD' '$install_log' '$state_file' -- bash -c 'exit 1'" \
+  script -qefc "stty rows 40 cols 120; PATH='$stubs:$PATH' COLLIE_PATH='$collie_share' PROGRESS_ICON='$ROOT/test/unit/fixtures/progress-icon.sh' COLLIE_UI_INTERACTIVE=no COLLIE_UI_FAILURE_ACTION=exit COLLIE_FAILURE_TAIL_LOG='$install_log' '$DASHBOARD' '$install_log' '$state_file' -- bash -c 'exit 1'" \
     "$screen" >/dev/null 2>&1
 }
 
@@ -443,7 +443,7 @@ set -e
 if grep -qF "install medium" <<<"$(visible_screen)"; then
   fail "an unrelated failure gets no media banner" "$(visible_screen | tail -n 25)"
 fi
-grep -qF "Omarchy installation stopped" <<<"$(visible_screen)" ||
+grep -qF "Collie installation stopped" <<<"$(visible_screen)" ||
   fail "an unrelated failure still renders the normal failure screen" "$(visible_screen | tail -n 25)"
 pass "an unrelated failure renders the failure screen unchanged"
 

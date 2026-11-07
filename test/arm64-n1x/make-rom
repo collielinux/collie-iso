@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Builds the PCI option ROM that makes a VM's firmware an NVIDIA N1x's, as far
-# as Omarchy can tell: the UEFI driver in n1x-firmware.c, with the SSDT in
+# as Collie can tell: the UEFI driver in n1x-firmware.c, with the SSDT in
 # nvda0200.asl inside it. QEMU's virt machine takes no ACPI tables from the
 # command line (-acpitable is for x86), so the table goes in the way a card's
 # firmware adds to a platform's: the firmware runs the ROM's driver while it

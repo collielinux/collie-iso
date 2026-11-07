@@ -2,7 +2,7 @@
 #
 # The installer's progress bar divides by the package count the build resolves
 # for a target install: the root image's packages plus what the per-machine
-# delta adds. The kernel an install gets is the build's OMARCHY_KERNEL on every
+# delta adds. The kernel an install gets is the build's COLLIE_KERNEL on every
 # architecture (the image carries it, so --needed adds nothing for it).
 # Counting stock `linux` on x86_64 adds a kernel no install gets, and aborts
 # the build the day the offline mirror stops carrying it.
@@ -11,7 +11,7 @@ set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 work=$(mktemp -d)
-trap 'rm -rf "$work" /tmp/omarchy-expected-packages' EXIT
+trap 'rm -rf "$work" /tmp/collie-expected-packages' EXIT
 
 # The function alone, not the rest of the build.
 awk '/^resolve_expected_packages\(\) \{$/,/^\}$/' "$ROOT/builder/build-iso.sh" >"$work/fn.sh"
@@ -34,7 +34,7 @@ image_packages=(base mkinitcpio)
 
 fail=0
 for arch in x86_64 aarch64; do
-  OMARCHY_ARCH=$arch OMARCHY_KERNEL=linux-omarchy
+  COLLIE_ARCH=$arch COLLIE_KERNEL=linux-omarchy
   count=$(resolve_expected_packages)
   asked=$(<"$work/targets")
   if [[ $asked != linux-omarchy ]]; then

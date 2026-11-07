@@ -21,7 +21,7 @@ class ArchinstallVersionTest(unittest.TestCase):
         patcher = mock.patch.dict(os.environ)
         patcher.start()
         self.addCleanup(patcher.stop)
-        os.environ.pop("OMARCHY_ARCHINSTALL_UNTESTED", None)
+        os.environ.pop("COLLIE_ARCHINSTALL_UNTESTED", None)
 
     def load(self):
         arch = self.enterContext(adapter())
@@ -43,7 +43,7 @@ class ArchinstallVersionTest(unittest.TestCase):
             arch.check_archinstall_version("4.6")
         self.assertIn("archinstall 4.6 is installed", str(caught.exception))
         self.assertIn("tested against archinstall 4.4 and 4.5", str(caught.exception))
-        self.assertIn("OMARCHY_ARCHINSTALL_UNTESTED=1", str(caught.exception))
+        self.assertIn("COLLIE_ARCHINSTALL_UNTESTED=1", str(caught.exception))
 
     def test_an_unknown_version_stops_the_install(self):
         arch, _ = self.load()
@@ -52,7 +52,7 @@ class ArchinstallVersionTest(unittest.TestCase):
 
     def test_the_override_runs_anyway_and_says_so(self):
         arch, said = self.load()
-        os.environ["OMARCHY_ARCHINSTALL_UNTESTED"] = "1"
+        os.environ["COLLIE_ARCHINSTALL_UNTESTED"] = "1"
         arch.check_archinstall_version("4.6")
         self.assertEqual(len(said), 1)
         self.assertIn("running anyway", said[0])
