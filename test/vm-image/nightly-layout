@@ -129,7 +129,7 @@ jq -n \
   --arg version "$version" --arg channel "$channel" --arg release "$site/$release" --arg image "$image" \
   --arg built_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --arg url "$iso_url" --arg sha256 "$iso_sha256" --argjson size "$iso_size" \
-  --arg iso_commit "$iso_commit" --argjson omarchy_version "$(jnull_or_str "$collie")" --argjson collie_commit "$(jnull_or_str "$collie_commit")" \
+  --arg iso_commit "$iso_commit" --argjson omarchy_version "$(jnull_or_str "$collie")" --arg collie_commit "$collie_commit" \
   --arg kernel "$kernel" \
   --arg vm_sha256 "$(cut -d' ' -f1 "$dir/$image.sha256")" --argjson vm_size "$(stat -c %s "$dir/$image")" \
   --args '{
