@@ -37,10 +37,10 @@ on:
     inputs:
       publish:
         description: "Publish to the nightly site (only from main)"
-      build_only:
-        description: "Build ISOs only; skip the install/boot tests"
         type: boolean
         default: false
+      build_only:
+        description: "Build ISOs only; skip the install/boot tests"
         type: boolean
         default: false
 
