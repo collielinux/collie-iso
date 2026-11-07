@@ -215,7 +215,7 @@ jobs:
           # (a self-hosted UTM VM, Namespace's profile) runs the full lane.
           if [[ ! -e /dev/kvm ]]; then
             echo "::warning::no KVM; ISO built but VM tests skipped"
-            echo "no packages.txt: /dev/kvm missing on this runner" > test-runs/aarch64-integration/packages.txt
+            : > test-runs/aarch64-integration/packages.txt
           else
             sudo chmod 0666 /dev/kvm
             ./test/arm64-container ./test/arm64-live-boot release/*.iso test-runs/aarch64-live
