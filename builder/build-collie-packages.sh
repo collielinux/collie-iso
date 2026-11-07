@@ -42,12 +42,14 @@ pacman -Sy --noconfirm
 : "${COLLIE_SETTINGS_PACKAGE:=omarchy-settings-dev}"
 : "${COLLIE_NVIM_PACKAGE:=collie-nvim}"
 : "${COLLIE_SCREENSAVER_PACKAGE:=collie-screensaver}"
+: "${COLLIE_KEYRING_PACKAGE:=collie-keyring}"
 
 packages=(
   "$COLLIE_SETTINGS_PACKAGE"
   "$COLLIE_RUNTIME_PACKAGE"
   "$COLLIE_NVIM_PACKAGE"
   "$COLLIE_SCREENSAVER_PACKAGE"
+  "$COLLIE_KEYRING_PACKAGE"
 )
 
 # Local-source packages must replace every cached build of the same package,
