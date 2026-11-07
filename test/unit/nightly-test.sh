@@ -343,10 +343,10 @@ declare -F detect_packages installed_system_started >/dev/null || fail "the harn
 packages_of() { ISO=$1; detect_packages; echo "$RUNTIME_PACKAGE $SETTINGS_PACKAGE"; }
 equal "an edge ISO installs the -dev packages" "$(packages_of release/collie-2026.10.09-x86_64-edge.iso)" "omarchy-dev omarchy-settings-dev"
 equal "a dev ISO installs the -dev packages" "$(packages_of release/collie-2026.10.09-x86_64-dev.iso)" "omarchy-dev omarchy-settings-dev"
-equal "a released ISO installs the release packages" "$(packages_of release/collie-4.0.4.iso)" "collie omarchy-settings"
-equal "a stable build installs the release packages" "$(packages_of /x/edge/collie-2026.10.09-x86_64-stable.iso)" "collie omarchy-settings"
-equal "an aarch64 rc ISO installs the release packages" "$(packages_of release/collie-2026.10.20-aarch64-rc.iso)" "collie omarchy-settings"
-equal "an aarch64 ISO with the debug key installs its channel's packages" "$(packages_of release/collie-2026.10.20-aarch64-devssh-quattro.iso)" "collie omarchy-settings"
+equal "a released ISO installs the release packages" "$(packages_of release/collie-4.0.4.iso)" "omarchy omarchy-settings"
+equal "a stable build installs the release packages" "$(packages_of /x/edge/collie-2026.10.09-x86_64-stable.iso)" "omarchy omarchy-settings"
+equal "an aarch64 rc ISO installs the release packages" "$(packages_of release/collie-2026.10.20-aarch64-rc.iso)" "omarchy omarchy-settings"
+equal "an aarch64 ISO with the debug key installs its channel's packages" "$(packages_of release/collie-2026.10.20-aarch64-devssh-quattro.iso)" "omarchy omarchy-settings"
 equal "an edge aarch64 ISO with the debug key installs the -dev packages" "$(packages_of release/collie-2026.10.20-aarch64-devssh-edge.iso)" "omarchy-dev omarchy-settings-dev"
 
 printf '%s\r\n' 'BdsDxe: loading Boot0002 "UEFI QEMU DVD-ROM QM00011 " from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x5,0xFFFF,0x0)' \
