@@ -245,7 +245,7 @@ jobs:
           packages=vm-packages.txt
           [[ $CHANNEL == edge-aarch64 ]] && packages=test-runs/aarch64-integration/packages.txt
           [[ -f $packages ]] || { mkdir -p "$(dirname "$packages")"; : >"$packages"; }
-          if [[ -d sealed ]]; then
+          if [[ -s sealed/base.qcow2 ]]; then
             ./test/vm-image/nightly-layout "$CHANNEL" "$VERSION" "$RELEASE" release/*.iso sealed "$packages" out
           else
             ./test/vm-image/nightly-layout "$CHANNEL" "$VERSION" "$RELEASE" release/*.iso - "$packages" out
