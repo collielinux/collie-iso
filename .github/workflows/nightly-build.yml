@@ -37,6 +37,10 @@ on:
     inputs:
       publish:
         description: "Publish to the nightly site (only from main)"
+      build_only:
+        description: "Build ISOs only; skip the install/boot tests"
+        type: boolean
+        default: false
         type: boolean
         default: false
 
@@ -168,7 +172,7 @@ jobs:
       # The same install test a pull request gets (install-test.yml), then the
       # image: the installed disk that test leaves behind, sealed and checked.
       - name: Install unattended, boot the installed system, seal it
-        if: matrix.arch != 'aarch64'
+        if: matrix.arch != 'aarch64' && inputs.build_only != true
         run: |
           sudo chmod 0666 /dev/kvm
           docker run --rm --device /dev/kvm -v "$PWD:/w" -w /w \
@@ -209,12 +213,14 @@ jobs:
       # sealed for aarch64 yet.
       - name: Boot, install unattended and boot the installed system (aarch64)
         if: matrix.arch == 'aarch64'
+        env:
+          BUILD_ONLY: ${{ inputs.build_only }}
         run: |
           mkdir -p test-runs/aarch64-integration
           # GitHub-hosted arm64 runners have no /dev/kvm. A runner that does
           # (a self-hosted UTM VM, Namespace's profile) runs the full lane.
-          if [[ ! -e /dev/kvm ]]; then
-            echo "::warning::no KVM; ISO built but VM tests skipped"
+          if [[ ! -e /dev/kvm || $BUILD_ONLY == true ]]; then
+            echo "::warning::ISO built but VM tests skipped"
             : > test-runs/aarch64-integration/packages.txt
           else
             sudo chmod 0666 /dev/kvm
@@ -235,10 +241,13 @@ jobs:
           ISO_COMMIT: ${{ github.sha }}
         run: |
           set -euo pipefail
-          if [[ $CHANNEL == edge-aarch64 ]]; then
-            ./test/vm-image/nightly-layout "$CHANNEL" "$VERSION" "$RELEASE" release/*.iso - test-runs/aarch64-integration/packages.txt out
+          packages=vm-packages.txt
+          [[ $CHANNEL == edge-aarch64 ]] && packages=test-runs/aarch64-integration/packages.txt
+          [[ -f $packages ]] || { mkdir -p "$(dirname "$packages")"; : >"$packages"; }
+          if [[ -d sealed ]]; then
+            ./test/vm-image/nightly-layout "$CHANNEL" "$VERSION" "$RELEASE" release/*.iso sealed "$packages" out
           else
-            ./test/vm-image/nightly-layout "$CHANNEL" "$VERSION" "$RELEASE" release/*.iso sealed vm-packages.txt out
+            ./test/vm-image/nightly-layout "$CHANNEL" "$VERSION" "$RELEASE" release/*.iso - "$packages" out
           fi
           dir=out/$RELEASE
 

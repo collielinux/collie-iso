@@ -43,9 +43,9 @@ fail() { echo "nightly-layout: $*" >&2; exit 1; }
 [[ $channel == edge || $channel == stable || $channel == edge-aarch64 ]] || fail "'$channel' is not a channel"
 [[ -f $iso_file ]] || fail "no ISO at $iso_file"
 unpacked=(vmlinuz initrd cmdline)
-if [[ $channel == edge-aarch64 ]]; then
-  [[ $sealed == - ]] || fail "edge-aarch64 publishes no image; its sealed_dir is -"
-else
+if [[ $sealed != - && $channel == edge-aarch64 ]]; then
+  fail "edge-aarch64 publishes no image; its sealed_dir is -"
+elif [[ $sealed != - ]]; then
   for file in base.qcow2 "${unpacked[@]}"; do
     [[ -s $sealed/$file ]] || fail "the sealed image has no $file"
   done
@@ -67,8 +67,13 @@ jnull_or_str() { [[ -n $1 ]] && printf '"%s"' "$1" || printf 'null'; }
 dir=$out/$release
 mkdir -p "$dir" "$out/$channel"
 latest=$out/$channel/latest.json
-if [[ $channel == edge-aarch64 ]]; then
-  iso=collie-edge-$version-aarch64.iso
+if [[ $sealed == - ]]; then
+  # ISO-only layout: a build-only lane, or aarch64 which never seals an image.
+  if [[ $channel == edge-aarch64 ]]; then
+    iso=collie-edge-$version-aarch64.iso arch=aarch64
+  else
+    iso=collie-$channel-$version.iso arch=x86_64
+  fi
   mv "$iso_file" "$dir/$iso"
   (cd "$dir" && sha256sum "$iso" >"$iso.sha256")
   jq -n \
@@ -76,18 +81,19 @@ if [[ $channel == edge-aarch64 ]]; then
     --arg url "$site/$release/$iso" --arg sha256 "$(cut -d' ' -f1 "$dir/$iso.sha256")" \
     --argjson size "$(stat -c %s "$dir/$iso")" \
     --arg iso_commit "$iso_commit" --argjson omarchy_version "$(jnull_or_str "$collie")" --argjson collie_commit "$(jnull_or_str "$collie_commit")" \
-    --argjson kernel "$(jnull_or_str "$kernel")" '{
-      version: $version, channel: $channel, arch: "aarch64", built_at: $built_at,
+    --argjson kernel "$(jnull_or_str "$kernel")" --arg arch "$arch" '{
+      version: $version, channel: $channel, arch: $arch, built_at: $built_at,
       url: $url, sha256: $sha256, size: $size,
       iso_commit: $iso_commit, omarchy_version: $omarchy_version, collie_commit: $collie_commit,
       kernel: $kernel
     }' >"$latest"
-  jq -e '
+  jq -e --arg channel "$channel" --arg arch "$arch" '
     def one_line: type == "string" and test("^[^\n]+$");
-    (.version | one_line) and .channel == "edge-aarch64" and .arch == "aarch64"
-    and (.url | test("^https://[^\n ]+-aarch64\\.iso$")) and (.sha256 | test("^[0-9a-f]{64}$")) and .size > 0
+    def opt_line: type == "null" or one_line;
+    (.version | one_line) and .channel == $channel and .arch == $arch
+    and (.url | test("\\.iso$")) and (.sha256 | test("^[0-9a-f]{64}$")) and .size > 0
     and (.iso_commit | test("^[0-9a-f]{40}$"))
-    and (.omarchy_version | one_line) and (.collie_commit | test("^[0-9a-f]*$")) and (.kernel | one_line)
+    and (.omarchy_version | opt_line) and (.collie_commit | (type == "null" or test("^[0-9a-f]*$"))) and (.kernel | opt_line)
     and (has("vm") | not)
   ' "$latest" >/dev/null || { cat "$latest" >&2; fail "latest.json does not say what it should"; }
   cat "$latest"
