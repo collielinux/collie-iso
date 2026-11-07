@@ -439,8 +439,9 @@ ssh_sudo() {
 # enter passphrase for disk root". An initramfs mkinitcpio builds on the
 # machine (on BIOS, or for a layout the pre-built UKI lacks) asks with
 # Plymouth's lock field under the logo: OCR reads the logo ("COLLIE",
-# "OMARCHS" at this size, "0MMARCHY" with tesseract 5.5) and nothing else:
-# one short word around "arch". Once an encrypted run has
+# "C0LLIE" and "C011IE" with tesseract) and nothing else: one short word
+# around "coll" or "llie" once digits are stripped. Once an encrypted run
+# has
 # shown nothing but the logo for two samples in a row, nothing but that
 # prompt is listening to the keyboard, so type the passphrase blind. The
 # installer's dashboard always carries more text ("Installing Collie",
@@ -454,7 +455,7 @@ answer_luks_prompt() {
 
   if grep -qiE "password is required|enter passphrase|unlocking" <<<"$text"; then
     capture_console "success-$shot"
-  elif [[ ${screen_words,,} =~ ^([a-z]{0,3}arch[a-z]{0,3})?$ ]]; then
+  elif [[ ${screen_words,,} =~ ^([a-z]{0,3}(coll|llie)[a-z]{0,3})?$ ]]; then
     ((++logo_samples >= 2)) || return 1
     capture_console "success-$shot-blind"
     logo_samples=0
