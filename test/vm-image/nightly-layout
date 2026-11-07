@@ -51,9 +51,9 @@ else
   done
 fi
 
-collie=$(awk '$1 == "collie" || $1 == "omarchy-dev" { print $2; exit }' "$packages")
+collie=$(awk '$1 == "omarchy" || $1 == "omarchy-dev" { print $2; exit }' "$packages")
 kernel=$(tail -n 1 "$packages")
-[[ -n $omarchy ]] || fail "$packages names no omarchy package"
+[[ -n $collie ]] || fail "$packages names no omarchy runtime package"
 [[ $kernel =~ ^[0-9]+\.[0-9] ]] || fail "$packages does not end with a kernel release"
 # An edge package's version carries the commit it was built from.
 collie_commit=$(sed -nE 's/.*\.g([0-9a-f]+)-.*/\1/p' <<<"$collie")

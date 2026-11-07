@@ -29,10 +29,7 @@ fail() { echo "nightly-plan: $*" >&2; exit 1; }
 [[ $run =~ ^[1-9][0-9]*$ ]] || fail "'$run' is not a run number"
 [[ $attempt =~ ^[1-9][0-9]*$ ]] || fail "'$attempt' is not a run attempt"
 stable=${tag#v}
-# No release yet means no stable channel: edge builds still run.
-if [[ -n $tag ]]; then
-  [[ $stable =~ ^[0-9]+(\.[0-9]+)+$ ]] || fail "the latest release is '$tag', not a version"
-fi
+[[ $stable =~ ^[0-9]+(\.[0-9]+)+$ ]] || fail "the latest release is '$tag', not a version"
 
 build=$run
 [[ $attempt == 1 ]] || build+=.$attempt
@@ -41,9 +38,7 @@ channels=$(jq -cn --arg v "$date.$build" '[
   {channel: "edge", arch: "x86_64", version: $v, release: "edge/\($v)"},
   {channel: "edge-aarch64", arch: "aarch64", version: $v, release: "edge-aarch64/\($v)"}
 ]')
-if [[ -z $tag ]]; then
-  :
-elif [[ $event == schedule && $published == "$stable" ]]; then
+if [[ $event == schedule && $published == "$stable" ]]; then
   echo "nightly-plan: stable $stable is already published" >&2
 else
   channels=$(jq -c --arg v "$stable" --arg build "$build" \
