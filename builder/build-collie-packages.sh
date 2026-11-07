@@ -74,7 +74,7 @@ for pkg in "${packages[@]}"; do
   # (cargo, neovim for collie-nvim's plugin bake, and so on). Ask makepkg
   # for the list and install it, stripping any version constraints pacman
   # would reject on the command line.
-  makedeps=$(su builder -c "cd '$pkg_work' && makepkg --printsrcinfo" 2>/dev/null | sed -n 's/^makedepends = //p' | tr ' ' '\n' | sed 's/[<>=].*//' | sort -u)
+  makedeps=$(su builder -c "cd '$pkg_work' && makepkg --printsrcinfo" 2>/dev/null | sed -n 's/^[[:space:]]*makedepends = //p' | tr ' ' '\n' | sed 's/[<>=].*//' | sort -u)
   if [[ -n $makedeps ]]; then
     # shellcheck disable=SC2086
     pacman -S --needed --noconfirm $makedeps
