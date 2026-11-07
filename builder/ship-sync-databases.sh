@@ -55,7 +55,7 @@ for repo in "${repos[@]}"; do
   shipped+=("$repo")
 done
 
-for required in core extra collie; do
+for required in core extra omarchy; do
   if [[ ! -f $sync_dir/$required.db ]]; then
     echo "ERROR: no $required.db in $source_dir to ship in the image" >&2
     exit 1
