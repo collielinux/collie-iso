@@ -256,7 +256,7 @@ class KernelSelectionTest(unittest.TestCase):
                 "etc/default/limine": "CUSTOM_UKI_NAME=collie\n",
                 "boot/EFI/limine/limine_x64.efi": "bootloader",
                 "boot/EFI/BOOT/BOOTX64.EFI": "bootloader",
-                "boot/EFI/Linux/collie_linux-collie.efi": "UKI",
+                "boot/EFI/Linux/collie_linux-omarchy.efi": "UKI",
             }
             for name, content in files.items():
                 path = target / name

@@ -87,7 +87,7 @@ verify() { # firmware: run the scenario's checks, the failures into $FAILURES
 }
 
 rm -rf "$work/root"
-initramfs "$work/root/boot/EFI/Linux/collie_linux-collie.efi" uk
+initramfs "$work/root/boot/EFI/Linux/collie_linux-omarchy.efi" uk
 verify uefi
 ((FAILURES == 0)) || fail "a UEFI install with the layout in its UKI failed: $(grep 'not ok' "$work/out")"
 echo "ok - a UEFI install is checked in its UKI"
