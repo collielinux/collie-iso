@@ -45,7 +45,7 @@ for pkg in alsa-firmware sof-firmware tailscale; do
     fail=1
   fi
 done
-for pkg in amd-ucode intel-ucode linux-omarchy linux-omarchy-headers base linux-firmware hyprland collie; do
+for pkg in amd-ucode intel-ucode linux-omarchy linux-omarchy-headers base linux-firmware hyprland omarchy; do
   has "$pkg" || { echo "the image lacks $pkg, which every install gets"; fail=1; }
 done
 (( fail == 0 )) || exit 1
