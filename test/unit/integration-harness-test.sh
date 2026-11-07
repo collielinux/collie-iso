@@ -130,7 +130,7 @@ for layout in us uk; do
   ((status == 0)) || fail "the $layout layout was refused: $(cat "$work/out")"
 done
 run kb_layout_typeable de
-((status != 0)) || fail "the de layout was accepted, where the passphrase collie types as omarchz"
+((status != 0)) || fail "the de layout was accepted, though the harness only types us and uk"
 grep -q "COLLIE_INTEGRATION_KB_LAYOUT=de" "$work/out" || fail "the refusal does not name the setting: $(cat "$work/out")"
 echo "ok - a layout the harness cannot type is refused"
 
@@ -142,7 +142,7 @@ typed() {
 }
 take type_text
 KB_LAYOUT=uk TYPE_LAYOUT=uk
-[[ $(typed collie) == "o m a r c h y" ]] || fail "the passphrase was typed under uk as $(typed collie)"
+[[ $(typed collie) == "c o l l i e" ]] || fail "the passphrase was typed under uk as $(typed collie)"
 [[ $(typed "test@omarchy.org") == "t e s t shift-apostrophe o m a r c h y dot o r g" ]] ||
   fail "the email was typed under uk as $(typed "test@omarchy.org")"
 [[ $(typed "cd ~") == "c d spc shift-backslash" ]] || fail "~ was typed under uk as $(typed "cd ~")"
