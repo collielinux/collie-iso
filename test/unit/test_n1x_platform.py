@@ -38,11 +38,11 @@ NORMAL_CMDLINE = (
 # its fallback UKI as the rescue entry.
 def limine_conf(rescue_cmdline=RESCUE_CMDLINE, normal_cmdline=NORMAL_CMDLINE, rescue=True):
     rescue_entry = f"""\
-  //linux-collie-fallback
+  //linux-omarchy-fallback
   comment: Kernel version: 7.2.8-8-collie
-  comment: kernel-id=linux-collie-fallback
+  comment: kernel-id=linux-omarchy-fallback
   protocol: efi
-  path: boot():/EFI/Linux/collie_linux-collie-fallback.efi#5187fcdd
+  path: boot():/EFI/Linux/collie_linux-omarchy-fallback.efi#5187fcdd
   cmdline: {rescue_cmdline}
 """ if rescue else ""
     return f"""\
@@ -55,7 +55,7 @@ comment: Collie
   comment: Kernel version: 7.2.8-8-collie
   comment: kernel-id=linux-omarchy
   protocol: efi
-  path: boot():/EFI/Linux/collie_linux-collie.efi#1ebecba8
+  path: boot():/EFI/Linux/collie_linux-omarchy.efi#1ebecba8
   cmdline: {normal_cmdline}
 {rescue_entry}
 /EFI fallback
@@ -147,7 +147,7 @@ class N1xLimineContractTest(unittest.TestCase):
             self.validate(limine_conf(normal_cmdline=f"console=tty0,115200 acpi=nospcr {ROOT_CMDLINE}"), "n1x")
 
     def test_missing_rescue_entry_fails(self):
-        with self.assertRaisesRegex(RuntimeError, "no linux-collie-fallback rescue entry"):
+        with self.assertRaisesRegex(RuntimeError, "no linux-omarchy-fallback rescue entry"):
             self.validate(limine_conf(rescue=False), "n1x")
 
     # The 2026-09-03 failure: the rescue entry carried the normal cmdline, so

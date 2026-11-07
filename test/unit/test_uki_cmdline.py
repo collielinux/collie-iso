@@ -123,7 +123,7 @@ class EmbedBeforeTheHashTest(unittest.TestCase):
             (target / path).parent.mkdir(parents=True, exist_ok=True)
             (target / path).write_text(text)
         (target / "var/lib/collie-iso/prebuilt-uki.efi").write_bytes(with_room())
-        esp_uki = target / "boot/EFI/Linux/collie_linux-collie.efi"
+        esp_uki = target / "boot/EFI/Linux/collie_linux-omarchy.efi"
 
         hashed = []
 
@@ -176,9 +176,9 @@ class PrebuiltUkiNameTest(unittest.TestCase):
              mock.patch.object(phases_impl, "_is_apple_t2_hardware", lambda: False):
             phases_impl.finalize_limine_boot(ctx)
 
-        self.assertTrue((target / "boot/EFI/Linux/custom_linux-collie.efi").is_file())
-        self.assertFalse((target / "boot/EFI/Linux/collie_linux-collie.efi").exists())
-        self.assertEqual(registered, ["/boot/EFI/Linux/custom_linux-collie.efi"])
+        self.assertTrue((target / "boot/EFI/Linux/custom_linux-omarchy.efi").is_file())
+        self.assertFalse((target / "boot/EFI/Linux/collie_linux-omarchy.efi").exists())
+        self.assertEqual(registered, ["/boot/EFI/Linux/custom_linux-omarchy.efi"])
 
     def test_without_a_valid_name_the_machine_id_names_it(self):
         target = Path(self.enterContext(tempfile.TemporaryDirectory()))

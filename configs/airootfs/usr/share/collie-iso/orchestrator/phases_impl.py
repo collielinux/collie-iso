@@ -82,7 +82,7 @@ def _default_package_targets() -> dict[str, str]:
         }
 
     return {
-        "runtime": "collie",
+        "runtime": "omarchy",
         "settings": "omarchy-settings",
         "nvim": "collie-nvim",
     }

@@ -44,11 +44,11 @@ class TargetKeyringTest(unittest.TestCase):
         return popen.call_args.args[0][-1]
 
     def test_aarch64_populates_the_arch_linux_arm_keys(self):
-        self.assertIn("--populate archlinux collie archlinuxarm", self.script("aarch64"))
+        self.assertIn("--populate archlinux omarchy archlinuxarm", self.script("aarch64"))
 
     def test_x86_64_does_not(self):
         script = self.script("x86_64")
-        self.assertIn("--populate archlinux collie", script)
+        self.assertIn("--populate archlinux omarchy", script)
         self.assertNotIn("archlinuxarm", script)
 
 
