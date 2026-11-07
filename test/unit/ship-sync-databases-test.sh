@@ -45,7 +45,7 @@ fixture() {
 }
 shipped() { (cd "$WORK/root/var/lib/pacman/sync" && ls | tr '\n' ' ' | sed 's/ $//'); }
 
-fixture collie core extra multilib arch-mact2 platform aur
+fixture omarchy core extra multilib arch-mact2 platform aur
 bash "$TOOL" "$WORK/root" "$WORK/sync" >/dev/null
 check "x86: exit status" 0 $?
 check "x86: the runtime's repositories and the T2 one, offline.db kept, build-only ones left behind" \
@@ -53,7 +53,7 @@ check "x86: the runtime's repositories and the T2 one, offline.db kept, build-on
 check "x86: the index keeps its mtime" \
   "$(stat -c %Y "$WORK/sync/core.db")" "$(stat -c %Y "$WORK/root/var/lib/pacman/sync/core.db")"
 
-fixture platform collie core extra alarm aur
+fixture platform omarchy core extra alarm aur
 bash "$TOOL" "$WORK/root" "$WORK/sync" >/dev/null
 check "aarch64: exit status" 0 $?
 check "aarch64: [alarm] shipped, the file:// [platform] bundle and [aur] not" \
