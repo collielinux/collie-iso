@@ -36,7 +36,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish to nightly.omarchy.org (only from quattro)"
+        description: "Publish to the nightly site (only from main)"
         type: boolean
         default: false
 
@@ -274,7 +274,7 @@ jobs:
   publish:
     name: Publish ${{ matrix.channel }}
     needs: [plan, build]
-    if: ${{ !cancelled() && github.ref == 'refs/heads/quattro' && (github.event_name == 'schedule' || inputs.publish) }}
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.publish) }}
     strategy:
       fail-fast: false
       matrix:
