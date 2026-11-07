@@ -171,7 +171,7 @@ jobs:
     name: "aarch64: build the ISO"
     needs: trust
     if: needs.trust.outputs.trusted == 'true'
-    runs-on: namespace-profile-arm64-linux-apple-12x32
+    runs-on: namespace-profile-collie-arm64
     timeout-minutes: 60
     env:
       ARCH: aarch64
@@ -533,7 +533,7 @@ jobs:
     name: "aarch64: ${{ matrix.name }}"
     # Skipped with its build, which runs for a trusted author only.
     needs: build-aarch64
-    runs-on: namespace-profile-arm64-linux-apple-12x32
+    runs-on: namespace-profile-collie-arm64
     timeout-minutes: 75
     strategy:
       fail-fast: false
