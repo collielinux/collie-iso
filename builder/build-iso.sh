@@ -62,7 +62,10 @@ esac
 : "${COLLIE_NVIM_PACKAGE:=collie-nvim}"
 : "${COLLIE_SCREENSAVER_PACKAGE:=collie-screensaver}"
 : "${COLLIE_KEYRING_PACKAGE:=collie-keyring}"
-export COLLIE_RUNTIME_PACKAGE COLLIE_SETTINGS_PACKAGE COLLIE_NVIM_PACKAGE COLLIE_SCREENSAVER_PACKAGE COLLIE_KEYRING_PACKAGE
+: "${COLLIE_SHEAR_PACKAGE:=shear}"
+: "${COLLIE_TALLY_PACKAGE:=tally}"
+: "${COLLIE_SNIP_PACKAGE:=snip}"
+export COLLIE_RUNTIME_PACKAGE COLLIE_SETTINGS_PACKAGE COLLIE_NVIM_PACKAGE COLLIE_SCREENSAVER_PACKAGE COLLIE_KEYRING_PACKAGE COLLIE_SHEAR_PACKAGE COLLIE_TALLY_PACKAGE COLLIE_SNIP_PACKAGE
 
 # pacman 7 sandboxes its downloads with Landlock and fails every sync on a
 # kernel without it (Namespace's AmpereOne arm64 machines): "restricting
@@ -297,6 +300,9 @@ COLLIE_SETTINGS_PACKAGE=$COLLIE_SETTINGS_PACKAGE
 COLLIE_NVIM_PACKAGE=$COLLIE_NVIM_PACKAGE
 COLLIE_SCREENSAVER_PACKAGE=$COLLIE_SCREENSAVER_PACKAGE
 COLLIE_KEYRING_PACKAGE=$COLLIE_KEYRING_PACKAGE
+COLLIE_SHEAR_PACKAGE=$COLLIE_SHEAR_PACKAGE
+COLLIE_TALLY_PACKAGE=$COLLIE_TALLY_PACKAGE
+COLLIE_SNIP_PACKAGE=$COLLIE_SNIP_PACKAGE
 EOF
 
 if [[ ${COLLIE_INSTALL_DEBUG:-} == "1" ]]; then
@@ -311,6 +317,9 @@ if [[ ${COLLIE_INSTALL_DEBUG:-} == "1" ]]; then
     echo "nvim_package=$COLLIE_NVIM_PACKAGE"
     echo "screensaver_package=$COLLIE_SCREENSAVER_PACKAGE"
     echo "keyring_package=$COLLIE_KEYRING_PACKAGE"
+    echo "shear_package=$COLLIE_SHEAR_PACKAGE"
+    echo "tally_package=$COLLIE_TALLY_PACKAGE"
+    echo "snip_package=$COLLIE_SNIP_PACKAGE"
     if [[ -d /collie-source ]]; then
       echo "collie_source=/collie-source"
       git -c safe.directory=/collie-source -C /collie-source rev-parse HEAD 2>/dev/null | sed 's/^/collie_commit=/' || true
@@ -335,7 +344,7 @@ if [[ -d /collie-source && -d /omarchy-pkgs ]]; then
   # --keep-pkg-cache builds) before the mirror, and a stale copy from an
   # earlier build fails the checksum against the mirror's fresh db.
   for local_package_name in \
-    "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE"; do
+    "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE" "$COLLIE_SHEAR_PACKAGE" "$COLLIE_TALLY_PACKAGE" "$COLLIE_SNIP_PACKAGE"; do
     rm -f /var/cache/pacman/pkg/"$local_package_name"-*.pkg.tar.zst{,.sig}
   done
 
@@ -596,7 +605,7 @@ mapfile -t all_packages < <(
     grep -hv '^#\|^$' /builder/image.packages
     # Always include the selected Collie packages so the target install can
     # find the runtime and companion packages in the offline mirror.
-    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE"
+    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE" "$COLLIE_SHEAR_PACKAGE" "$COLLIE_TALLY_PACKAGE" "$COLLIE_SNIP_PACKAGE"
   } | sort -u
 )
 
@@ -626,7 +635,7 @@ mapfile -t target_packages < <(
     grep -hv '^#\|^$' "${base_pkg_lists[@]}" "${platform_lists[@]}"
     grep -hv '^#\|^$' "$archinstall_packages_file"
     grep -hv '^#\|^$' /builder/image.packages
-    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE"
+    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE" "$COLLIE_SHEAR_PACKAGE" "$COLLIE_TALLY_PACKAGE" "$COLLIE_SNIP_PACKAGE"
   } | sed 's/^broadcom-wl$/broadcom-wl-dkms/' | sort -u
 )
 
@@ -674,7 +683,7 @@ fi
 # published provider on top of the local build.
 if [[ -n ${LOCAL_COLLIE_BUILD:-} ]]; then
   local_pkginfo=$(
-    for pkg in "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE"; do
+    for pkg in "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE" "$COLLIE_SHEAR_PACKAGE" "$COLLIE_TALLY_PACKAGE" "$COLLIE_SNIP_PACKAGE"; do
       for archive in "$offline_mirror_dir/$pkg"-[0-9]*.pkg.tar.*; do
         [[ $archive == *.sig ]] || bsdtar -xOf "$archive" .PKGINFO
       done
@@ -701,7 +710,10 @@ if [[ -n ${LOCAL_COLLIE_BUILD:-} ]]; then
         -e "$COLLIE_SETTINGS_PACKAGE" \
         -e "$COLLIE_NVIM_PACKAGE" \
         -e "$COLLIE_SCREENSAVER_PACKAGE" \
-        -e "$COLLIE_KEYRING_PACKAGE" || true
+        -e "$COLLIE_KEYRING_PACKAGE" \
+        -e "$COLLIE_SHEAR_PACKAGE" \
+        -e "$COLLIE_TALLY_PACKAGE" \
+        -e "$COLLIE_SNIP_PACKAGE" || true
   )
   # They are in the image, so never shipped; and the online db the closure is
   # resolved against does not know the local builds.
@@ -712,7 +724,10 @@ if [[ -n ${LOCAL_COLLIE_BUILD:-} ]]; then
         -e "$COLLIE_SETTINGS_PACKAGE" \
         -e "$COLLIE_NVIM_PACKAGE" \
         -e "$COLLIE_SCREENSAVER_PACKAGE" \
-        -e "$COLLIE_KEYRING_PACKAGE" || true
+        -e "$COLLIE_KEYRING_PACKAGE" \
+        -e "$COLLIE_SHEAR_PACKAGE" \
+        -e "$COLLIE_TALLY_PACKAGE" \
+        -e "$COLLIE_SNIP_PACKAGE" || true
   )
 fi
 
@@ -836,7 +851,7 @@ mapfile -t required_package_files <<< "$resolved_package_files"
 # collie-apply-system able to resolve them like any published build.
 if [[ -n ${LOCAL_COLLIE_BUILD:-} ]]; then
   for local_package_name in \
-    "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE"; do
+    "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE" "$COLLIE_SHEAR_PACKAGE" "$COLLIE_TALLY_PACKAGE" "$COLLIE_SNIP_PACKAGE"; do
     local_package_file=""
     for candidate in "$offline_mirror_dir/$local_package_name-"*.pkg.tar.*; do
       [[ -f $candidate && $candidate != *.sig ]] || continue
@@ -901,7 +916,7 @@ image_package_list() {
     ((${#image_arch_packages[@]} == 0)) || printf '%s\n' "${image_arch_packages[@]}"
     # The shipped copy, which is what the install reads too.
     grep -hv '^#\|^$' "$build_cache_dir/airootfs/usr/share/collie-iso/collie-base.packages"
-    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE"
+    printf '%s\n' "$COLLIE_RUNTIME_PACKAGE" "$COLLIE_SETTINGS_PACKAGE" "$COLLIE_NVIM_PACKAGE" "$COLLIE_SCREENSAVER_PACKAGE" "$COLLIE_KEYRING_PACKAGE" "$COLLIE_SHEAR_PACKAGE" "$COLLIE_TALLY_PACKAGE" "$COLLIE_SNIP_PACKAGE"
   } | sort -u
 }
 mapfile -t image_packages < <(image_package_list)

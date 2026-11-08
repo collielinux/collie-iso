@@ -138,12 +138,6 @@ jobs:
       # No package cache, on purpose: every package the ISO is made of is
       # fetched from the mirrors again each night, so one that has gone
       # missing there fails this build instead of being served from a cache.
-      # No shear/tally/snip packages are published yet; the installed system
-      # carries the upstream-named apps until collie republishes them.
-      - name: Swap unpublished app names for upstream ones
-        if: matrix.channel != 'stable'
-        run: |
-          sed -i -e 's/^shear$/omacut/' -e 's/^tally$/omacalc/' -e 's/^snip$/omasnap/'             collie-source/install/collie-base.packages
 
       - name: Build the edge ISO
         if: matrix.channel == 'edge'

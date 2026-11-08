@@ -27,7 +27,7 @@ build_cache_dir=$work/cache
 mkdir -p "$build_cache_dir/airootfs/usr/share/collie-iso"
 printf '%s\n' hyprland snapper >"$build_cache_dir/airootfs/usr/share/collie-iso/collie-base.packages"
 image_arch_packages=()
-COLLIE_RUNTIME_PACKAGE=omarchy COLLIE_SETTINGS_PACKAGE=omarchy-settings COLLIE_NVIM_PACKAGE=collie-nvim COLLIE_SCREENSAVER_PACKAGE=collie-screensaver COLLIE_KEYRING_PACKAGE=collie-keyring
+COLLIE_RUNTIME_PACKAGE=omarchy COLLIE_SETTINGS_PACKAGE=omarchy-settings COLLIE_NVIM_PACKAGE=collie-nvim COLLIE_SCREENSAVER_PACKAGE=collie-screensaver COLLIE_KEYRING_PACKAGE=collie-keyring COLLIE_SHEAR_PACKAGE=shear COLLIE_TALLY_PACKAGE=tally COLLIE_SNIP_PACKAGE=snip
 
 mapfile -t image < <(image_package_list)
 has() { printf '%s\n' "${image[@]}" | grep -qxF "$1"; }
